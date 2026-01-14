@@ -768,6 +768,27 @@ pub mod hexrays {
         idalib_hexrays_get_signed_mcode,
         idalib_hexrays_get_unsigned_mcode,
         idalib_hexrays_has_cached_cfunc,
+        // Callback management
+        idalib_hexrays_has_callback,
+        // Event type constants
+        idalib_hexrays_hxe_build_callinfo,
+        idalib_hexrays_hxe_calls_done,
+        idalib_hexrays_hxe_combine,
+        idalib_hexrays_hxe_flowchart,
+        idalib_hexrays_hxe_func_printed,
+        idalib_hexrays_hxe_glbopt,
+        idalib_hexrays_hxe_interr,
+        idalib_hexrays_hxe_locopt,
+        idalib_hexrays_hxe_maturity,
+        idalib_hexrays_hxe_microcode,
+        idalib_hexrays_hxe_prealloc,
+        idalib_hexrays_hxe_preoptimized,
+        idalib_hexrays_hxe_print_func,
+        idalib_hexrays_hxe_prolog,
+        idalib_hexrays_hxe_resolve_stkaddrs,
+        idalib_hexrays_hxe_stkpnts,
+        idalib_hexrays_hxe_structural,
+        idalib_hexrays_install_callback,
         idalib_hexrays_is_assignment_op,
         idalib_hexrays_is_binary_op,
         idalib_hexrays_is_commutative_op,
@@ -962,6 +983,7 @@ pub mod hexrays {
         idalib_hexrays_negate_mcode_relation,
         // Operator helpers
         idalib_hexrays_negated_relation,
+        idalib_hexrays_remove_callback,
         idalib_hexrays_save_user_cmts_ea,
         idalib_hexrays_save_user_iflags_ea,
         // User data management (new)
@@ -1786,6 +1808,31 @@ mod ffix {
         // minsn_t iteration helpers
         unsafe fn idalib_hexrays_minsn_nexti(m: *const minsn_t) -> *mut minsn_t;
         unsafe fn idalib_hexrays_minsn_previ(m: *const minsn_t) -> *mut minsn_t;
+
+        // Hexrays callback infrastructure
+        // Event type constants
+        unsafe fn idalib_hexrays_hxe_flowchart() -> c_int;
+        unsafe fn idalib_hexrays_hxe_stkpnts() -> c_int;
+        unsafe fn idalib_hexrays_hxe_prolog() -> c_int;
+        unsafe fn idalib_hexrays_hxe_microcode() -> c_int;
+        unsafe fn idalib_hexrays_hxe_preoptimized() -> c_int;
+        unsafe fn idalib_hexrays_hxe_locopt() -> c_int;
+        unsafe fn idalib_hexrays_hxe_prealloc() -> c_int;
+        unsafe fn idalib_hexrays_hxe_glbopt() -> c_int;
+        unsafe fn idalib_hexrays_hxe_structural() -> c_int;
+        unsafe fn idalib_hexrays_hxe_maturity() -> c_int;
+        unsafe fn idalib_hexrays_hxe_interr() -> c_int;
+        unsafe fn idalib_hexrays_hxe_combine() -> c_int;
+        unsafe fn idalib_hexrays_hxe_print_func() -> c_int;
+        unsafe fn idalib_hexrays_hxe_func_printed() -> c_int;
+        unsafe fn idalib_hexrays_hxe_resolve_stkaddrs() -> c_int;
+        unsafe fn idalib_hexrays_hxe_build_callinfo() -> c_int;
+        unsafe fn idalib_hexrays_hxe_calls_done() -> c_int;
+
+        // Callback management
+        unsafe fn idalib_hexrays_install_callback() -> bool;
+        unsafe fn idalib_hexrays_remove_callback();
+        unsafe fn idalib_hexrays_has_callback() -> bool;
 
         unsafe fn idalib_inf_get_version() -> u16;
         unsafe fn idalib_inf_get_genflags() -> u16;

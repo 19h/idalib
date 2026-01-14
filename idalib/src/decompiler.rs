@@ -284,6 +284,26 @@ use crate::ffi::hexrays::{
     idalib_hexrays_get_signed_mcode,
     idalib_hexrays_get_unsigned_mcode,
     idalib_hexrays_has_cached_cfunc,
+    // Callback infrastructure
+    idalib_hexrays_has_callback,
+    idalib_hexrays_hxe_build_callinfo,
+    idalib_hexrays_hxe_calls_done,
+    idalib_hexrays_hxe_combine,
+    idalib_hexrays_hxe_flowchart,
+    idalib_hexrays_hxe_func_printed,
+    idalib_hexrays_hxe_glbopt,
+    idalib_hexrays_hxe_interr,
+    idalib_hexrays_hxe_locopt,
+    idalib_hexrays_hxe_maturity,
+    idalib_hexrays_hxe_microcode,
+    idalib_hexrays_hxe_prealloc,
+    idalib_hexrays_hxe_preoptimized,
+    idalib_hexrays_hxe_print_func,
+    idalib_hexrays_hxe_prolog,
+    idalib_hexrays_hxe_resolve_stkaddrs,
+    idalib_hexrays_hxe_stkpnts,
+    idalib_hexrays_hxe_structural,
+    idalib_hexrays_install_callback,
     idalib_hexrays_is_assignment_op,
     idalib_hexrays_is_binary_op,
     idalib_hexrays_is_commutative_op,
@@ -449,6 +469,7 @@ use crate::ffi::hexrays::{
     idalib_hexrays_negate_mcode_relation,
     // Operator helpers
     idalib_hexrays_negated_relation,
+    idalib_hexrays_remove_callback,
     idalib_hexrays_swap_mcode_relation,
     idalib_hexrays_swapped_relation,
     // Types
@@ -3373,5 +3394,287 @@ pub mod merror {
     /// Unsupported architecture
     pub fn badarch() -> i32 {
         unsafe { idalib_hexrays_merr_badarch() }.into()
+    }
+}
+
+// ============================================================================
+// Hexrays Decompiler Callbacks
+// ============================================================================
+
+use std::sync::Mutex;
+
+/// Hexrays event types
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(i32)]
+pub enum HexraysEvent {
+    /// Flowchart has been generated
+    Flowchart,
+    /// Stack points have been calculated
+    Stkpnts,
+    /// Prolog analysis finished
+    Prolog,
+    /// Microcode has been generated
+    Microcode,
+    /// Microcode has been preoptimized
+    Preoptimized,
+    /// Local optimization finished
+    Locopt,
+    /// Preallocation step begins
+    Prealloc,
+    /// Global optimization finished
+    Glbopt,
+    /// Structural analysis finished
+    Structural,
+    /// Ctree maturity level changed
+    Maturity,
+    /// Internal error
+    Interr,
+    /// Trying to combine instructions
+    Combine,
+    /// Printing ctree
+    PrintFunc,
+    /// Function text generated
+    FuncPrinted,
+    /// Resolving stack addresses
+    ResolveStkaddrs,
+    /// Building call info
+    BuildCallinfo,
+    /// All calls analyzed
+    CallsDone,
+    /// Unknown event
+    Unknown(i32),
+}
+
+impl HexraysEvent {
+    fn from_code(code: i32) -> Self {
+        let flowchart = unsafe { idalib_hexrays_hxe_flowchart() }.into();
+        let stkpnts = unsafe { idalib_hexrays_hxe_stkpnts() }.into();
+        let prolog = unsafe { idalib_hexrays_hxe_prolog() }.into();
+        let microcode = unsafe { idalib_hexrays_hxe_microcode() }.into();
+        let preoptimized = unsafe { idalib_hexrays_hxe_preoptimized() }.into();
+        let locopt = unsafe { idalib_hexrays_hxe_locopt() }.into();
+        let prealloc = unsafe { idalib_hexrays_hxe_prealloc() }.into();
+        let glbopt = unsafe { idalib_hexrays_hxe_glbopt() }.into();
+        let structural = unsafe { idalib_hexrays_hxe_structural() }.into();
+        let maturity = unsafe { idalib_hexrays_hxe_maturity() }.into();
+        let interr = unsafe { idalib_hexrays_hxe_interr() }.into();
+        let combine = unsafe { idalib_hexrays_hxe_combine() }.into();
+        let print_func = unsafe { idalib_hexrays_hxe_print_func() }.into();
+        let func_printed = unsafe { idalib_hexrays_hxe_func_printed() }.into();
+        let resolve_stkaddrs = unsafe { idalib_hexrays_hxe_resolve_stkaddrs() }.into();
+        let build_callinfo = unsafe { idalib_hexrays_hxe_build_callinfo() }.into();
+        let calls_done = unsafe { idalib_hexrays_hxe_calls_done() }.into();
+
+        match code {
+            c if c == flowchart => HexraysEvent::Flowchart,
+            c if c == stkpnts => HexraysEvent::Stkpnts,
+            c if c == prolog => HexraysEvent::Prolog,
+            c if c == microcode => HexraysEvent::Microcode,
+            c if c == preoptimized => HexraysEvent::Preoptimized,
+            c if c == locopt => HexraysEvent::Locopt,
+            c if c == prealloc => HexraysEvent::Prealloc,
+            c if c == glbopt => HexraysEvent::Glbopt,
+            c if c == structural => HexraysEvent::Structural,
+            c if c == maturity => HexraysEvent::Maturity,
+            c if c == interr => HexraysEvent::Interr,
+            c if c == combine => HexraysEvent::Combine,
+            c if c == print_func => HexraysEvent::PrintFunc,
+            c if c == func_printed => HexraysEvent::FuncPrinted,
+            c if c == resolve_stkaddrs => HexraysEvent::ResolveStkaddrs,
+            c if c == build_callinfo => HexraysEvent::BuildCallinfo,
+            c if c == calls_done => HexraysEvent::CallsDone,
+            _ => HexraysEvent::Unknown(code),
+        }
+    }
+
+    /// Get the event name as a string
+    pub fn name(&self) -> &'static str {
+        match self {
+            HexraysEvent::Flowchart => "flowchart",
+            HexraysEvent::Stkpnts => "stkpnts",
+            HexraysEvent::Prolog => "prolog",
+            HexraysEvent::Microcode => "microcode",
+            HexraysEvent::Preoptimized => "preoptimized",
+            HexraysEvent::Locopt => "locopt",
+            HexraysEvent::Prealloc => "prealloc",
+            HexraysEvent::Glbopt => "glbopt",
+            HexraysEvent::Structural => "structural",
+            HexraysEvent::Maturity => "maturity",
+            HexraysEvent::Interr => "interr",
+            HexraysEvent::Combine => "combine",
+            HexraysEvent::PrintFunc => "print_func",
+            HexraysEvent::FuncPrinted => "func_printed",
+            HexraysEvent::ResolveStkaddrs => "resolve_stkaddrs",
+            HexraysEvent::BuildCallinfo => "build_callinfo",
+            HexraysEvent::CallsDone => "calls_done",
+            HexraysEvent::Unknown(_) => "unknown",
+        }
+    }
+}
+
+/// Data passed to the callback for each event
+#[derive(Debug)]
+pub struct HexraysEventData {
+    /// The event type
+    pub event: HexraysEvent,
+    /// For maturity events: the new maturity level
+    /// For interr events: the error code
+    pub extra: i32,
+    /// True if MBA data is available
+    pub has_mba: bool,
+    /// True if CFunc data is available
+    pub has_cfunc: bool,
+}
+
+/// Callback function type for hexrays events
+/// Return 0 to continue, non-zero to stop processing
+pub type HexraysCallbackFn = Box<dyn Fn(&HexraysEventData) -> i32 + Send + Sync>;
+
+/// Global storage for the callback
+static HEXRAYS_CALLBACK: Mutex<Option<HexraysCallbackFn>> = Mutex::new(None);
+
+/// The extern "C" function that C++ calls
+#[unsafe(no_mangle)]
+pub extern "C" fn idalib_hexrays_rust_event_handler(
+    event: i32,
+    mba: *mut mba_t,
+    cfunc: *mut cfunc_t,
+    extra: i32,
+) -> i32 {
+    let guard = match HEXRAYS_CALLBACK.lock() {
+        Ok(g) => g,
+        Err(_) => return 0, // Poisoned mutex, just continue
+    };
+
+    if let Some(ref callback) = *guard {
+        let data = HexraysEventData {
+            event: HexraysEvent::from_code(event),
+            extra,
+            has_mba: !mba.is_null(),
+            has_cfunc: !cfunc.is_null(),
+        };
+        callback(&data)
+    } else {
+        0
+    }
+}
+
+/// Install a hexrays event callback
+///
+/// Only one callback can be installed at a time. Installing a new callback
+/// will replace any existing callback.
+///
+/// # Example
+/// ```ignore
+/// use idalib::decompiler::{install_hexrays_callback, HexraysEvent};
+///
+/// install_hexrays_callback(|data| {
+///     println!("Event: {:?}", data.event);
+///     0 // Continue processing
+/// });
+/// ```
+pub fn install_hexrays_callback<F>(callback: F) -> bool
+where
+    F: Fn(&HexraysEventData) -> i32 + Send + Sync + 'static,
+{
+    let mut guard = match HEXRAYS_CALLBACK.lock() {
+        Ok(g) => g,
+        Err(_) => return false,
+    };
+
+    *guard = Some(Box::new(callback));
+
+    // Install the C++ callback
+    unsafe { idalib_hexrays_install_callback() }
+}
+
+/// Remove the hexrays event callback
+pub fn remove_hexrays_callback() {
+    let mut guard = match HEXRAYS_CALLBACK.lock() {
+        Ok(g) => g,
+        Err(_) => return,
+    };
+
+    *guard = None;
+
+    unsafe { idalib_hexrays_remove_callback() }
+}
+
+/// Check if a hexrays callback is installed
+pub fn has_hexrays_callback() -> bool {
+    unsafe { idalib_hexrays_has_callback() }
+}
+
+/// Hexrays event type constants module
+pub mod hxe {
+    use crate::ffi::hexrays::*;
+
+    /// Flowchart generated
+    pub fn flowchart() -> i32 {
+        unsafe { idalib_hexrays_hxe_flowchart() }.into()
+    }
+    /// Stack points calculated
+    pub fn stkpnts() -> i32 {
+        unsafe { idalib_hexrays_hxe_stkpnts() }.into()
+    }
+    /// Prolog analysis finished
+    pub fn prolog() -> i32 {
+        unsafe { idalib_hexrays_hxe_prolog() }.into()
+    }
+    /// Microcode generated
+    pub fn microcode() -> i32 {
+        unsafe { idalib_hexrays_hxe_microcode() }.into()
+    }
+    /// Microcode preoptimized
+    pub fn preoptimized() -> i32 {
+        unsafe { idalib_hexrays_hxe_preoptimized() }.into()
+    }
+    /// Local optimization finished
+    pub fn locopt() -> i32 {
+        unsafe { idalib_hexrays_hxe_locopt() }.into()
+    }
+    /// Preallocation step
+    pub fn prealloc() -> i32 {
+        unsafe { idalib_hexrays_hxe_prealloc() }.into()
+    }
+    /// Global optimization finished
+    pub fn glbopt() -> i32 {
+        unsafe { idalib_hexrays_hxe_glbopt() }.into()
+    }
+    /// Structural analysis finished
+    pub fn structural() -> i32 {
+        unsafe { idalib_hexrays_hxe_structural() }.into()
+    }
+    /// Ctree maturity changed
+    pub fn maturity() -> i32 {
+        unsafe { idalib_hexrays_hxe_maturity() }.into()
+    }
+    /// Internal error
+    pub fn interr() -> i32 {
+        unsafe { idalib_hexrays_hxe_interr() }.into()
+    }
+    /// Combining instructions
+    pub fn combine() -> i32 {
+        unsafe { idalib_hexrays_hxe_combine() }.into()
+    }
+    /// Printing function
+    pub fn print_func() -> i32 {
+        unsafe { idalib_hexrays_hxe_print_func() }.into()
+    }
+    /// Function printed
+    pub fn func_printed() -> i32 {
+        unsafe { idalib_hexrays_hxe_func_printed() }.into()
+    }
+    /// Resolving stack addresses
+    pub fn resolve_stkaddrs() -> i32 {
+        unsafe { idalib_hexrays_hxe_resolve_stkaddrs() }.into()
+    }
+    /// Building call info
+    pub fn build_callinfo() -> i32 {
+        unsafe { idalib_hexrays_hxe_build_callinfo() }.into()
+    }
+    /// All calls analyzed
+    pub fn calls_done() -> i32 {
+        unsafe { idalib_hexrays_hxe_calls_done() }.into()
     }
 }

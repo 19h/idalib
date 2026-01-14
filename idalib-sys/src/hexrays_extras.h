@@ -1968,3 +1968,133 @@ inline minsn_t *idalib_hexrays_minsn_previ(const minsn_t *m) {
   }
   return p;
 }
+
+// ============================================================================
+// Hexrays Callback Infrastructure
+// ============================================================================
+
+// Event type constants (matching hexrays_event_t)
+inline int idalib_hexrays_hxe_flowchart() { return hxe_flowchart; }
+inline int idalib_hexrays_hxe_stkpnts() { return hxe_stkpnts; }
+inline int idalib_hexrays_hxe_prolog() { return hxe_prolog; }
+inline int idalib_hexrays_hxe_microcode() { return hxe_microcode; }
+inline int idalib_hexrays_hxe_preoptimized() { return hxe_preoptimized; }
+inline int idalib_hexrays_hxe_locopt() { return hxe_locopt; }
+inline int idalib_hexrays_hxe_prealloc() { return hxe_prealloc; }
+inline int idalib_hexrays_hxe_glbopt() { return hxe_glbopt; }
+inline int idalib_hexrays_hxe_structural() { return hxe_structural; }
+inline int idalib_hexrays_hxe_maturity() { return hxe_maturity; }
+inline int idalib_hexrays_hxe_interr() { return hxe_interr; }
+inline int idalib_hexrays_hxe_combine() { return hxe_combine; }
+inline int idalib_hexrays_hxe_print_func() { return hxe_print_func; }
+inline int idalib_hexrays_hxe_func_printed() { return hxe_func_printed; }
+inline int idalib_hexrays_hxe_resolve_stkaddrs() { return hxe_resolve_stkaddrs; }
+inline int idalib_hexrays_hxe_build_callinfo() { return hxe_build_callinfo; }
+inline int idalib_hexrays_hxe_calls_done() { return hxe_calls_done; }
+
+// Forward declaration of Rust callback function (defined in Rust with extern "C")
+extern "C" int idalib_hexrays_rust_event_handler(
+    int event,
+    mba_t *mba,
+    cfunc_t *cfunc,
+    int extra
+);
+
+// Global flag to track if callback is installed
+static bool g_hexrays_callback_installed = false;
+
+// C++ trampoline callback that dispatches to Rust
+static ssize_t idaapi idalib_hexrays_trampoline_callback(
+    void *ud,
+    hexrays_event_t event,
+    va_list va
+) {
+    mba_t *mba = nullptr;
+    cfunc_t *cfunc = nullptr;
+    int extra = 0;
+
+    switch (event) {
+        case hxe_flowchart: {
+            // qflow_chart_t *fc, mba_t *mba, bitset_t *reachable, int decomp_flags
+            va_arg(va, void*); // skip fc
+            mba = va_arg(va, mba_t*);
+            break;
+        }
+        case hxe_stkpnts:
+        case hxe_microcode:
+        case hxe_preoptimized:
+        case hxe_locopt:
+        case hxe_prealloc:
+        case hxe_glbopt:
+        case hxe_resolve_stkaddrs:
+        case hxe_calls_done: {
+            // mba_t *mba
+            mba = va_arg(va, mba_t*);
+            break;
+        }
+        case hxe_prolog: {
+            // mba_t *mba, qflow_chart_t *fc, bitset_t *reachable, int decomp_flags
+            mba = va_arg(va, mba_t*);
+            break;
+        }
+        case hxe_maturity: {
+            // cfunc_t *cfunc, ctree_maturity_t new_maturity
+            cfunc = va_arg(va, cfunc_t*);
+            extra = va_arg(va, int); // new_maturity
+            break;
+        }
+        case hxe_interr: {
+            // int errcode
+            extra = va_arg(va, int);
+            break;
+        }
+        case hxe_combine: {
+            // mblock_t *blk, minsn_t *insn
+            // For now, we don't extract these - just notify
+            break;
+        }
+        case hxe_print_func:
+        case hxe_func_printed: {
+            // cfunc_t *cfunc
+            cfunc = va_arg(va, cfunc_t*);
+            break;
+        }
+        case hxe_structural: {
+            // control_graph_t *ct
+            // Skip - complex type
+            break;
+        }
+        case hxe_build_callinfo: {
+            // mblock_t *blk, tinfo_t *type, mcallinfo_t **callinfo
+            // Skip - complex types
+            break;
+        }
+        default:
+            // Unknown or UI event - just pass event type
+            break;
+    }
+
+    return idalib_hexrays_rust_event_handler(static_cast<int>(event), mba, cfunc, extra);
+}
+
+// Install the hexrays callback
+inline bool idalib_hexrays_install_callback() {
+    if (g_hexrays_callback_installed) {
+        return true; // Already installed
+    }
+    g_hexrays_callback_installed = install_hexrays_callback(idalib_hexrays_trampoline_callback, nullptr);
+    return g_hexrays_callback_installed;
+}
+
+// Remove the hexrays callback
+inline void idalib_hexrays_remove_callback() {
+    if (g_hexrays_callback_installed) {
+        remove_hexrays_callback(idalib_hexrays_trampoline_callback, nullptr);
+        g_hexrays_callback_installed = false;
+    }
+}
+
+// Check if callback is installed
+inline bool idalib_hexrays_has_callback() {
+    return g_hexrays_callback_installed;
+}

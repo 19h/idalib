@@ -10,18 +10,24 @@
 //! - Switch statements with case iteration
 //! - Pseudocode line-by-line access
 //! - Expression type introspection
+//! - Decompiler event callbacks
 //!
 //! Usage: cargo run --release --example hexrays_demo -- /path/to/binary
 
 use std::env;
+use std::sync::atomic::{AtomicU32, Ordering};
 
 use idalib::IDAError;
 use idalib::decompiler::{
-    self, CExpr, CInsn, ctype, get_merror_desc, mcode_is_call, mcode_is_comparison, mcode_is_jcc,
-    mcode_is_jump, mcode_is_ret, mcode_name, merror, mop_type, negate_mcode_relation,
+    self, CExpr, CInsn, ctype, get_merror_desc, install_hexrays_callback, mcode_is_call,
+    mcode_is_comparison, mcode_is_jcc, mcode_is_jump, mcode_is_ret, mcode_name, merror, mop_type,
+    negate_mcode_relation, remove_hexrays_callback,
 };
 use idalib::func::FunctionFlags;
 use idalib::idb::IDB;
+
+// Global counter for callback demo
+static EVENT_COUNT: AtomicU32 = AtomicU32::new(0);
 
 fn main() -> anyhow::Result<()> {
     let args: Vec<String> = env::args().collect();
@@ -38,7 +44,25 @@ fn main() -> anyhow::Result<()> {
     println!("Decompiler available!");
     println!("Functions: {}\n", idb.function_count());
 
-    // Process first 5 non-tail functions
+    // Install a callback to monitor decompilation events
+    println!("[Installing Hexrays Callback]");
+    let callback_installed = install_hexrays_callback(|data| {
+        let count = EVENT_COUNT.fetch_add(1, Ordering::Relaxed);
+        // Only print first few events to avoid spam
+        if count < 10 {
+            println!(
+                "  -> Event: {} (extra={}, mba={}, cfunc={})",
+                data.event.name(),
+                data.extra,
+                data.has_mba,
+                data.has_cfunc
+            );
+        }
+        0 // Continue processing
+    });
+    println!("  Callback installed: {}\n", callback_installed);
+
+    // Process first 3 non-tail functions
     let mut processed = 0;
     for (_fid, func) in idb.functions() {
         if func.flags().contains(FunctionFlags::TAIL) {
@@ -70,6 +94,12 @@ fn main() -> anyhow::Result<()> {
         }
         println!();
     }
+
+    // Remove the callback and show stats
+    remove_hexrays_callback();
+    let total_events = EVENT_COUNT.load(Ordering::Relaxed);
+    println!("\n[Callback Summary]");
+    println!("  Total events received: {}", total_events);
 
     Ok(())
 }

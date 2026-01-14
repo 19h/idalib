@@ -19,9 +19,9 @@ use std::sync::atomic::{AtomicU32, Ordering};
 
 use idalib::IDAError;
 use idalib::decompiler::{
-    self, CExpr, CInsn, ctype, get_merror_desc, install_hexrays_callback, mcode_is_call,
-    mcode_is_comparison, mcode_is_jcc, mcode_is_jump, mcode_is_ret, mcode_name, merror, mop_type,
-    negate_mcode_relation, remove_hexrays_callback,
+    self, CExpr, CInsn, ctype, funcrole, get_merror_desc, install_hexrays_callback, itp,
+    mcode_is_call, mcode_is_comparison, mcode_is_jcc, mcode_is_jump, mcode_is_ret, mcode_name,
+    merror, mop_type, negate_mcode_relation, remove_hexrays_callback, role_name,
 };
 use idalib::func::FunctionFlags;
 use idalib::idb::IDB;
@@ -111,6 +111,41 @@ fn analyze_function(cfunc: &idalib::decompiler::CFunction) {
     println!("  Maturity: {}", cfunc.maturity());
     println!("  Declaration: {}", cfunc.declaration());
     println!("  Type: {}", cfunc.type_str());
+
+    // User annotations info
+    println!("\n[User Annotations]");
+    println!("  User comments: {}", cfunc.user_cmts_count());
+    println!("  User labels: {}", cfunc.user_labels_count());
+    println!("  Number formats: {}", cfunc.numforms_count());
+
+    // Demo: User comment access (if any exist)
+    if cfunc.user_cmts_count() > 0 {
+        println!("  (User comments exist at various locations)");
+    }
+
+    // Show item preciser constants (itp)
+    println!("\n[Item Preciser Constants (for comments)]");
+    println!("  itp::semi() = {} (after semicolon)", itp::semi());
+    println!("  itp::curly1() = {} (after {{)", itp::curly1());
+    println!("  itp::for_arg(0) = {} (after arg 0)", itp::for_arg(0));
+
+    // Show function role constants
+    println!("\n[Function Role Constants]");
+    println!(
+        "  funcrole::memcpy() = {} ({})",
+        funcrole::memcpy(),
+        role_name(funcrole::memcpy())
+    );
+    println!(
+        "  funcrole::strlen() = {} ({})",
+        funcrole::strlen(),
+        role_name(funcrole::strlen())
+    );
+    println!(
+        "  funcrole::alloca() = {} ({})",
+        funcrole::alloca(),
+        role_name(funcrole::alloca())
+    );
 
     // Local variables - show how to access by index and by name
     println!("\n[Local Variables] ({})", cfunc.lvars_count());
@@ -341,6 +376,19 @@ fn analyze_function(cfunc: &idalib::decompiler::CFunction) {
                         print!(" num={}", left.number_value().unwrap_or(0));
                     } else if left.is_stack() {
                         print!(" stkoff={}", left.stack_offset().unwrap_or(0));
+                    } else if left.is_arglist() {
+                        // Show call info for mop_f operands
+                        print!(" call_args={}", left.call_args_count());
+                        let role = left.call_role();
+                        if role != funcrole::unk() {
+                            print!(" role={}", role_name(role));
+                        }
+                        if left.call_is_vararg() {
+                            print!(" (vararg)");
+                        }
+                        if left.call_is_noret() {
+                            print!(" (noret)");
+                        }
                     }
                     println!(" size={}", left.size());
                 }

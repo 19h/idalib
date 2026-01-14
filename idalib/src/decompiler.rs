@@ -114,6 +114,8 @@ use crate::ffi::hexrays::{
     idalib_hexrays_cfunc_find_lvar_by_name,
     // Tree navigation
     idalib_hexrays_cfunc_find_parent_of,
+    idalib_hexrays_cfunc_get_user_cmt,
+    idalib_hexrays_cfunc_get_user_label,
     idalib_hexrays_cfunc_has_orphan_cmts,
     idalib_hexrays_cfunc_hdrlines,
     // lvar modifications
@@ -122,6 +124,7 @@ use crate::ffi::hexrays::{
     idalib_hexrays_cfunc_lvars_iter,
     idalib_hexrays_cfunc_maturity,
     idalib_hexrays_cfunc_mba,
+    idalib_hexrays_cfunc_numforms_count,
     idalib_hexrays_cfunc_print_dcl,
     idalib_hexrays_cfunc_pseudocode,
     idalib_hexrays_cfunc_pseudocode_line_at,
@@ -135,8 +138,12 @@ use crate::ffi::hexrays::{
     idalib_hexrays_cfunc_save_user_labels,
     idalib_hexrays_cfunc_save_user_numforms,
     idalib_hexrays_cfunc_save_user_unions,
+    idalib_hexrays_cfunc_set_user_cmt,
+    idalib_hexrays_cfunc_set_user_label,
     idalib_hexrays_cfunc_stkoff_delta,
     idalib_hexrays_cfunc_type_str,
+    idalib_hexrays_cfunc_user_cmts_count,
+    idalib_hexrays_cfunc_user_labels_count,
     idalib_hexrays_cfunc_warning_at,
     idalib_hexrays_cfunc_warning_ea_at,
     idalib_hexrays_cfunc_warnings_count,
@@ -433,35 +440,93 @@ use crate::ffi::hexrays::{
     idalib_hexrays_mop_a,
     idalib_hexrays_mop_addr_target,
     idalib_hexrays_mop_b,
+    idalib_hexrays_mop_blkref,
     idalib_hexrays_mop_c,
+    idalib_hexrays_mop_call_arg_at,
+    idalib_hexrays_mop_call_arg_name,
+    idalib_hexrays_mop_call_arg_type,
+    idalib_hexrays_mop_call_args_count,
+    // mcallinfo_t accessors
+    idalib_hexrays_mop_call_callee,
+    idalib_hexrays_mop_call_flags,
+    idalib_hexrays_mop_call_is_noret,
+    idalib_hexrays_mop_call_is_noside,
+    idalib_hexrays_mop_call_is_pure,
+    idalib_hexrays_mop_call_is_vararg,
+    idalib_hexrays_mop_call_return_type,
+    idalib_hexrays_mop_call_role,
+    idalib_hexrays_mop_call_solid_args,
+    idalib_hexrays_mop_case_target,
+    idalib_hexrays_mop_case_value,
+    idalib_hexrays_mop_case_values_count,
+    // mcases_t accessors
+    idalib_hexrays_mop_cases_count,
     idalib_hexrays_mop_d as idalib_hexrays_mop_d_const,
     idalib_hexrays_mop_dstr,
+    // Extended mop_t predicates
+    idalib_hexrays_mop_empty,
     idalib_hexrays_mop_f,
     idalib_hexrays_mop_fn,
     idalib_hexrays_mop_glbaddr,
     idalib_hexrays_mop_h,
+    idalib_hexrays_mop_has_side_effects,
+    // mop_t value accessors
+    idalib_hexrays_mop_helper_name,
     idalib_hexrays_mop_insn,
     idalib_hexrays_mop_is_addr,
+    idalib_hexrays_mop_is_arglist,
+    idalib_hexrays_mop_is_cases,
+    idalib_hexrays_mop_is_cc,
+    // mop_t value tests
+    idalib_hexrays_mop_is_constant,
+    idalib_hexrays_mop_is_fpconst,
     idalib_hexrays_mop_is_glb,
+    idalib_hexrays_mop_is_glbaddr,
+    idalib_hexrays_mop_is_glbvar,
+    idalib_hexrays_mop_is_helper,
     idalib_hexrays_mop_is_insn,
+    idalib_hexrays_mop_is_lowaddr,
     idalib_hexrays_mop_is_lvar,
+    idalib_hexrays_mop_is_mblock,
+    idalib_hexrays_mop_is_negative_constant,
     idalib_hexrays_mop_is_number,
+    idalib_hexrays_mop_is_one,
+    idalib_hexrays_mop_is_pair,
+    idalib_hexrays_mop_is_positive_constant,
     idalib_hexrays_mop_is_reg,
+    idalib_hexrays_mop_is_scattered,
     idalib_hexrays_mop_is_stk,
+    idalib_hexrays_mop_is_stkaddr,
+    idalib_hexrays_mop_is_stkvar,
+    idalib_hexrays_mop_is_strlit,
+    idalib_hexrays_mop_is_udt,
+    idalib_hexrays_mop_is_undef_val,
+    idalib_hexrays_mop_is_zero,
+    idalib_hexrays_mop_is01,
     idalib_hexrays_mop_l,
     idalib_hexrays_mop_lvar_idx,
     idalib_hexrays_mop_n,
     idalib_hexrays_mop_nnn_value,
+    // mop_t properties
+    idalib_hexrays_mop_oprops,
     idalib_hexrays_mop_p,
+    idalib_hexrays_mop_pair_high,
+    // mop_pair_t accessors
+    idalib_hexrays_mop_pair_low,
+    idalib_hexrays_mop_probably_floating,
     idalib_hexrays_mop_r,
     idalib_hexrays_mop_reg,
     idalib_hexrays_mop_sc,
+    idalib_hexrays_mop_signed_value,
     idalib_hexrays_mop_size,
     idalib_hexrays_mop_stkoff,
     idalib_hexrays_mop_str as idalib_hexrays_mop_str_const,
+    idalib_hexrays_mop_strlit,
     // mop_t operations
     idalib_hexrays_mop_type,
+    idalib_hexrays_mop_unsigned_value,
     idalib_hexrays_mop_v,
+    idalib_hexrays_mop_valnum,
     // mop_t type constants
     idalib_hexrays_mop_z,
     idalib_hexrays_must_mcode_close_block,
@@ -1172,6 +1237,68 @@ impl<'a> CFunction<'a> {
     /// Save user-defined union selections.
     pub fn save_user_unions(&self) {
         unsafe { idalib_hexrays_cfunc_save_user_unions(self.ptr) }
+    }
+
+    // --- User Comments API ---
+
+    /// Get a user comment at a specific location.
+    ///
+    /// # Arguments
+    /// * `ea` - The effective address
+    /// * `itp` - The item preciser (use constants from `itp` module)
+    ///
+    /// # Example
+    /// ```ignore
+    /// use idalib::decompiler::itp;
+    /// let comment = cfunc.get_user_cmt(0x1000, itp::semi());
+    /// ```
+    pub fn get_user_cmt(&self, ea: Address, item_preciser: i32) -> Option<String> {
+        let s = unsafe { idalib_hexrays_cfunc_get_user_cmt(self.ptr, ea, c_int(item_preciser)) };
+        if s.is_empty() { None } else { Some(s) }
+    }
+
+    /// Set a user comment at a specific location.
+    ///
+    /// Call `save_user_cmts()` after to persist to the database.
+    ///
+    /// # Arguments
+    /// * `ea` - The effective address
+    /// * `itp` - The item preciser (use constants from `itp` module)
+    /// * `comment` - The comment text (empty string removes the comment)
+    pub fn set_user_cmt(&mut self, ea: Address, item_preciser: i32, comment: &str) {
+        unsafe { idalib_hexrays_cfunc_set_user_cmt(self.ptr, ea, c_int(item_preciser), comment) }
+    }
+
+    /// Get the number of user comments.
+    pub fn user_cmts_count(&self) -> usize {
+        unsafe { idalib_hexrays_cfunc_user_cmts_count(self.ptr) }
+    }
+
+    // --- User Labels API ---
+
+    /// Get a user-defined label by label number.
+    pub fn get_user_label(&self, label_num: i32) -> Option<String> {
+        let s = unsafe { idalib_hexrays_cfunc_get_user_label(self.ptr, c_int(label_num)) };
+        if s.is_empty() { None } else { Some(s) }
+    }
+
+    /// Set a user-defined label.
+    ///
+    /// Call `save_user_labels()` after to persist to the database.
+    pub fn set_user_label(&mut self, label_num: i32, label: &str) {
+        unsafe { idalib_hexrays_cfunc_set_user_label(self.ptr, c_int(label_num), label) }
+    }
+
+    /// Get the number of user labels.
+    pub fn user_labels_count(&self) -> usize {
+        unsafe { idalib_hexrays_cfunc_user_labels_count(self.ptr) }
+    }
+
+    // --- Number Formats API ---
+
+    /// Get the number of user-defined number formats.
+    pub fn numforms_count(&self) -> usize {
+        unsafe { idalib_hexrays_cfunc_numforms_count(self.ptr) }
     }
 
     // --- Tree navigation ---
@@ -3173,6 +3300,406 @@ impl<'a> Mop<'a> {
             None
         }
     }
+
+    // --- Extended type checks ---
+
+    /// Check if the operand is empty (mop_z).
+    pub fn is_empty(&self) -> bool {
+        unsafe { idalib_hexrays_mop_empty(self.ptr) }
+    }
+
+    /// Check if this is a global variable operand.
+    pub fn is_glbvar(&self) -> bool {
+        unsafe { idalib_hexrays_mop_is_glbvar(self.ptr) }
+    }
+
+    /// Check if this is a stack variable operand.
+    pub fn is_stkvar(&self) -> bool {
+        unsafe { idalib_hexrays_mop_is_stkvar(self.ptr) }
+    }
+
+    /// Check if this is an argument list (call info).
+    pub fn is_arglist(&self) -> bool {
+        unsafe { idalib_hexrays_mop_is_arglist(self.ptr) }
+    }
+
+    /// Check if this is a condition code register.
+    pub fn is_cc(&self) -> bool {
+        unsafe { idalib_hexrays_mop_is_cc(self.ptr) }
+    }
+
+    /// Check if this is a block reference.
+    pub fn is_mblock(&self) -> bool {
+        unsafe { idalib_hexrays_mop_is_mblock(self.ptr) }
+    }
+
+    /// Check if this is a scattered operand.
+    pub fn is_scattered(&self) -> bool {
+        unsafe { idalib_hexrays_mop_is_scattered(self.ptr) }
+    }
+
+    /// Check if this is the address of a global variable.
+    pub fn is_glbaddr(&self) -> bool {
+        unsafe { idalib_hexrays_mop_is_glbaddr(self.ptr) }
+    }
+
+    /// Check if this is the address of a stack variable.
+    pub fn is_stkaddr(&self) -> bool {
+        unsafe { idalib_hexrays_mop_is_stkaddr(self.ptr) }
+    }
+
+    /// Check if this is a helper function name.
+    pub fn is_helper(&self) -> bool {
+        unsafe { idalib_hexrays_mop_is_helper(self.ptr) }
+    }
+
+    /// Check if this is a string literal.
+    pub fn is_strlit(&self) -> bool {
+        unsafe { idalib_hexrays_mop_is_strlit(self.ptr) }
+    }
+
+    /// Check if this is a floating point constant.
+    pub fn is_fpconst(&self) -> bool {
+        unsafe { idalib_hexrays_mop_is_fpconst(self.ptr) }
+    }
+
+    /// Check if this is a pair operand.
+    pub fn is_pair(&self) -> bool {
+        unsafe { idalib_hexrays_mop_is_pair(self.ptr) }
+    }
+
+    /// Check if this is a switch cases operand.
+    pub fn is_cases(&self) -> bool {
+        unsafe { idalib_hexrays_mop_is_cases(self.ptr) }
+    }
+
+    // --- Value tests ---
+
+    /// Check if this is a constant and optionally get its value.
+    pub fn constant_value(&self) -> Option<u64> {
+        let mut val: u64 = 0;
+        if unsafe { idalib_hexrays_mop_is_constant(self.ptr, &mut val) } {
+            Some(val)
+        } else {
+            None
+        }
+    }
+
+    /// Check if this operand is zero.
+    pub fn is_zero(&self) -> bool {
+        unsafe { idalib_hexrays_mop_is_zero(self.ptr) }
+    }
+
+    /// Check if this operand is one.
+    pub fn is_one(&self) -> bool {
+        unsafe { idalib_hexrays_mop_is_one(self.ptr) }
+    }
+
+    /// Check if this is a positive constant.
+    pub fn is_positive_constant(&self) -> bool {
+        unsafe { idalib_hexrays_mop_is_positive_constant(self.ptr) }
+    }
+
+    /// Check if this is a negative constant.
+    pub fn is_negative_constant(&self) -> bool {
+        unsafe { idalib_hexrays_mop_is_negative_constant(self.ptr) }
+    }
+
+    /// Check if possible values are only 0 and 1.
+    pub fn is_bool_like(&self) -> bool {
+        unsafe { idalib_hexrays_mop_is01(self.ptr) }
+    }
+
+    /// Check if the operand has side effects.
+    pub fn has_side_effects(&self, include_ldx: bool) -> bool {
+        unsafe { idalib_hexrays_mop_has_side_effects(self.ptr, include_ldx) }
+    }
+
+    // --- Properties ---
+
+    /// Get the operand properties (oprops field).
+    pub fn oprops(&self) -> i32 {
+        unsafe { idalib_hexrays_mop_oprops(self.ptr) }.into()
+    }
+
+    /// Get the value number (for value numbering optimization).
+    pub fn valnum(&self) -> i32 {
+        unsafe { idalib_hexrays_mop_valnum(self.ptr) }.into()
+    }
+
+    /// Check if this is a UDT (struct/union).
+    pub fn is_udt(&self) -> bool {
+        unsafe { idalib_hexrays_mop_is_udt(self.ptr) }
+    }
+
+    /// Check if this is probably a floating point value.
+    pub fn probably_floating(&self) -> bool {
+        unsafe { idalib_hexrays_mop_probably_floating(self.ptr) }
+    }
+
+    /// Check if this uses an undefined value.
+    pub fn is_undef_val(&self) -> bool {
+        unsafe { idalib_hexrays_mop_is_undef_val(self.ptr) }
+    }
+
+    /// Check if this is a low address offset.
+    pub fn is_lowaddr(&self) -> bool {
+        unsafe { idalib_hexrays_mop_is_lowaddr(self.ptr) }
+    }
+
+    // --- Value accessors ---
+
+    /// Get the helper function name (for mop_h operands).
+    pub fn helper_name(&self) -> Option<String> {
+        if self.is_helper() {
+            let s = unsafe { idalib_hexrays_mop_helper_name(self.ptr) };
+            if s.is_empty() { None } else { Some(s) }
+        } else {
+            None
+        }
+    }
+
+    /// Get the string literal value (for mop_str operands).
+    pub fn strlit(&self) -> Option<String> {
+        if self.is_strlit() {
+            let s = unsafe { idalib_hexrays_mop_strlit(self.ptr) };
+            if s.is_empty() { None } else { Some(s) }
+        } else {
+            None
+        }
+    }
+
+    /// Get the block reference number (for mop_b operands).
+    pub fn blkref(&self) -> Option<i32> {
+        if self.is_mblock() {
+            let b: i32 = unsafe { idalib_hexrays_mop_blkref(self.ptr) }.into();
+            if b >= 0 { Some(b) } else { None }
+        } else {
+            None
+        }
+    }
+
+    /// Get the signed value (for number operands).
+    pub fn signed_value(&self) -> Option<i64> {
+        if self.is_number() {
+            Some(unsafe { idalib_hexrays_mop_signed_value(self.ptr) })
+        } else {
+            None
+        }
+    }
+
+    /// Get the unsigned value (for number operands).
+    pub fn unsigned_value(&self) -> Option<u64> {
+        if self.is_number() {
+            Some(unsafe { idalib_hexrays_mop_unsigned_value(self.ptr) })
+        } else {
+            None
+        }
+    }
+
+    // --- Pair operand access ---
+
+    /// Get the low operand of a pair.
+    pub fn pair_low(&self) -> Option<Mop<'a>> {
+        if self.is_pair() {
+            let ptr = unsafe { idalib_hexrays_mop_pair_low(self.ptr) };
+            if ptr.is_null() {
+                None
+            } else {
+                Some(Mop {
+                    ptr,
+                    _marker: PhantomData,
+                })
+            }
+        } else {
+            None
+        }
+    }
+
+    /// Get the high operand of a pair.
+    pub fn pair_high(&self) -> Option<Mop<'a>> {
+        if self.is_pair() {
+            let ptr = unsafe { idalib_hexrays_mop_pair_high(self.ptr) };
+            if ptr.is_null() {
+                None
+            } else {
+                Some(Mop {
+                    ptr,
+                    _marker: PhantomData,
+                })
+            }
+        } else {
+            None
+        }
+    }
+
+    // --- Call info access ---
+
+    /// Get the callee address (for call operands).
+    pub fn call_callee(&self) -> Option<Address> {
+        if self.is_arglist() {
+            let addr = unsafe { idalib_hexrays_mop_call_callee(self.ptr) };
+            if addr != u64::MAX { Some(addr) } else { None }
+        } else {
+            None
+        }
+    }
+
+    /// Get the number of call arguments.
+    pub fn call_args_count(&self) -> usize {
+        if self.is_arglist() {
+            let count: i32 = unsafe { idalib_hexrays_mop_call_args_count(self.ptr) }.into();
+            count as usize
+        } else {
+            0
+        }
+    }
+
+    /// Get the number of solid (non-variadic) arguments.
+    pub fn call_solid_args(&self) -> i32 {
+        if self.is_arglist() {
+            unsafe { idalib_hexrays_mop_call_solid_args(self.ptr) }.into()
+        } else {
+            0
+        }
+    }
+
+    /// Check if the call is to a variadic function.
+    pub fn call_is_vararg(&self) -> bool {
+        self.is_arglist() && unsafe { idalib_hexrays_mop_call_is_vararg(self.ptr) }
+    }
+
+    /// Get the call flags.
+    pub fn call_flags(&self) -> i32 {
+        if self.is_arglist() {
+            unsafe { idalib_hexrays_mop_call_flags(self.ptr) }.into()
+        } else {
+            0
+        }
+    }
+
+    /// Check if the call doesn't return.
+    pub fn call_is_noret(&self) -> bool {
+        self.is_arglist() && unsafe { idalib_hexrays_mop_call_is_noret(self.ptr) }
+    }
+
+    /// Check if the call is to a pure function.
+    pub fn call_is_pure(&self) -> bool {
+        self.is_arglist() && unsafe { idalib_hexrays_mop_call_is_pure(self.ptr) }
+    }
+
+    /// Check if the call has no side effects.
+    pub fn call_is_noside(&self) -> bool {
+        self.is_arglist() && unsafe { idalib_hexrays_mop_call_is_noside(self.ptr) }
+    }
+
+    /// Get the return type as a string.
+    pub fn call_return_type(&self) -> Option<String> {
+        if self.is_arglist() {
+            let s = unsafe { idalib_hexrays_mop_call_return_type(self.ptr) };
+            if s.is_empty() { None } else { Some(s) }
+        } else {
+            None
+        }
+    }
+
+    /// Get a call argument at the specified index.
+    pub fn call_arg_at(&self, idx: usize) -> Option<Mop<'a>> {
+        if self.is_arglist() && idx < self.call_args_count() {
+            let ptr = unsafe { idalib_hexrays_mop_call_arg_at(self.ptr, c_int(idx as i32)) };
+            if ptr.is_null() {
+                None
+            } else {
+                Some(Mop {
+                    ptr,
+                    _marker: PhantomData,
+                })
+            }
+        } else {
+            None
+        }
+    }
+
+    /// Get the type of a call argument as a string.
+    pub fn call_arg_type(&self, idx: usize) -> Option<String> {
+        if self.is_arglist() && idx < self.call_args_count() {
+            let s = unsafe { idalib_hexrays_mop_call_arg_type(self.ptr, c_int(idx as i32)) };
+            if s.is_empty() { None } else { Some(s) }
+        } else {
+            None
+        }
+    }
+
+    /// Get the name of a call argument.
+    pub fn call_arg_name(&self, idx: usize) -> Option<String> {
+        if self.is_arglist() && idx < self.call_args_count() {
+            let s = unsafe { idalib_hexrays_mop_call_arg_name(self.ptr, c_int(idx as i32)) };
+            if s.is_empty() { None } else { Some(s) }
+        } else {
+            None
+        }
+    }
+
+    /// Get the function role (for known functions like memcpy, strlen, etc.).
+    pub fn call_role(&self) -> i32 {
+        if self.is_arglist() {
+            unsafe { idalib_hexrays_mop_call_role(self.ptr) }.into()
+        } else {
+            0
+        }
+    }
+
+    // --- Switch cases access ---
+
+    /// Get the number of switch cases.
+    pub fn cases_count(&self) -> usize {
+        if self.is_cases() {
+            let count: i32 = unsafe { idalib_hexrays_mop_cases_count(self.ptr) }.into();
+            count as usize
+        } else {
+            0
+        }
+    }
+
+    /// Get the target block for a case at the specified index.
+    pub fn case_target(&self, idx: usize) -> Option<i32> {
+        if self.is_cases() && idx < self.cases_count() {
+            let t: i32 =
+                unsafe { idalib_hexrays_mop_case_target(self.ptr, c_int(idx as i32)) }.into();
+            if t >= 0 { Some(t) } else { None }
+        } else {
+            None
+        }
+    }
+
+    /// Get the number of values for a case at the specified index.
+    pub fn case_values_count(&self, idx: usize) -> usize {
+        if self.is_cases() && idx < self.cases_count() {
+            let count: i32 =
+                unsafe { idalib_hexrays_mop_case_values_count(self.ptr, c_int(idx as i32)) }.into();
+            count as usize
+        } else {
+            0
+        }
+    }
+
+    /// Get a specific case value.
+    pub fn case_value(&self, case_idx: usize, val_idx: usize) -> Option<u64> {
+        if self.is_cases()
+            && case_idx < self.cases_count()
+            && val_idx < self.case_values_count(case_idx)
+        {
+            Some(unsafe {
+                idalib_hexrays_mop_case_value(
+                    self.ptr,
+                    c_int(case_idx as i32),
+                    c_int(val_idx as i32),
+                )
+            })
+        } else {
+            None
+        }
+    }
 }
 
 // ============================================================================
@@ -3676,5 +4203,288 @@ pub mod hxe {
     /// All calls analyzed
     pub fn calls_done() -> i32 {
         unsafe { idalib_hexrays_hxe_calls_done() }.into()
+    }
+}
+
+// ============================================================================
+// Function Role Constants (funcrole_t)
+// ============================================================================
+
+/// Function role constants for known library functions.
+/// Use with `Mop::call_role()` to identify recognized function patterns.
+pub mod funcrole {
+    use crate::ffi::hexrays::*;
+
+    /// Unknown function role
+    pub fn unk() -> i32 {
+        unsafe { idalib_hexrays_role_unk() }.into()
+    }
+    /// Empty function (does nothing, may spoil registers)
+    pub fn empty() -> i32 {
+        unsafe { idalib_hexrays_role_empty() }.into()
+    }
+    /// memset(void *dst, uchar value, size_t count)
+    pub fn memset() -> i32 {
+        unsafe { idalib_hexrays_role_memset() }.into()
+    }
+    /// memset32(void *dst, uint32 value, size_t count)
+    pub fn memset32() -> i32 {
+        unsafe { idalib_hexrays_role_memset32() }.into()
+    }
+    /// memset64(void *dst, uint64 value, size_t count)
+    pub fn memset64() -> i32 {
+        unsafe { idalib_hexrays_role_memset64() }.into()
+    }
+    /// memcpy(void *dst, const void *src, size_t count)
+    pub fn memcpy() -> i32 {
+        unsafe { idalib_hexrays_role_memcpy() }.into()
+    }
+    /// strcpy(char *dst, const char *src)
+    pub fn strcpy() -> i32 {
+        unsafe { idalib_hexrays_role_strcpy() }.into()
+    }
+    /// strlen(const char *src)
+    pub fn strlen() -> i32 {
+        unsafe { idalib_hexrays_role_strlen() }.into()
+    }
+    /// strcat(char *dst, const char *src)
+    pub fn strcat() -> i32 {
+        unsafe { idalib_hexrays_role_strcat() }.into()
+    }
+    /// tail(const char *str) - returns pointer to end
+    pub fn tail() -> i32 {
+        unsafe { idalib_hexrays_role_tail() }.into()
+    }
+    /// BUG() helper macro - never returns, causes exception
+    pub fn bug() -> i32 {
+        unsafe { idalib_hexrays_role_bug() }.into()
+    }
+    /// alloca() - stack allocation
+    pub fn alloca() -> i32 {
+        unsafe { idalib_hexrays_role_alloca() }.into()
+    }
+    /// bswap() - byte swap (any size)
+    pub fn bswap() -> i32 {
+        unsafe { idalib_hexrays_role_bswap() }.into()
+    }
+    /// present() - used in patterns
+    pub fn present() -> i32 {
+        unsafe { idalib_hexrays_role_present() }.into()
+    }
+    /// CONTAINING_RECORD() macro
+    pub fn containing_record() -> i32 {
+        unsafe { idalib_hexrays_role_containing_record() }.into()
+    }
+    /// __fastfail()
+    pub fn fastfail() -> i32 {
+        unsafe { idalib_hexrays_role_fastfail() }.into()
+    }
+    /// __readeflags, __readcallersflags
+    pub fn readflags() -> i32 {
+        unsafe { idalib_hexrays_role_readflags() }.into()
+    }
+    /// is_mul_ok - overflow-safe multiply check
+    pub fn is_mul_ok() -> i32 {
+        unsafe { idalib_hexrays_role_is_mul_ok() }.into()
+    }
+    /// saturated_mul - saturating multiply
+    pub fn saturated_mul() -> i32 {
+        unsafe { idalib_hexrays_role_saturated_mul() }.into()
+    }
+    /// [lock] bt - bit test
+    pub fn bittest() -> i32 {
+        unsafe { idalib_hexrays_role_bittest() }.into()
+    }
+    /// [lock] bts - bit test and set
+    pub fn bittestandset() -> i32 {
+        unsafe { idalib_hexrays_role_bittestandset() }.into()
+    }
+    /// [lock] btr - bit test and reset
+    pub fn bittestandreset() -> i32 {
+        unsafe { idalib_hexrays_role_bittestandreset() }.into()
+    }
+    /// [lock] btc - bit test and complement
+    pub fn bittestandcomplement() -> i32 {
+        unsafe { idalib_hexrays_role_bittestandcomplement() }.into()
+    }
+    /// va_arg() macro
+    pub fn va_arg() -> i32 {
+        unsafe { idalib_hexrays_role_va_arg() }.into()
+    }
+    /// va_copy() function
+    pub fn va_copy() -> i32 {
+        unsafe { idalib_hexrays_role_va_copy() }.into()
+    }
+    /// va_start() function
+    pub fn va_start() -> i32 {
+        unsafe { idalib_hexrays_role_va_start() }.into()
+    }
+    /// va_end() function
+    pub fn va_end() -> i32 {
+        unsafe { idalib_hexrays_role_va_end() }.into()
+    }
+    /// Rotate left
+    pub fn rol() -> i32 {
+        unsafe { idalib_hexrays_role_rol() }.into()
+    }
+    /// Rotate right
+    pub fn ror() -> i32 {
+        unsafe { idalib_hexrays_role_ror() }.into()
+    }
+    /// Carry flag after subtract with carry
+    pub fn cfsub3() -> i32 {
+        unsafe { idalib_hexrays_role_cfsub3() }.into()
+    }
+    /// Overflow flag after subtract with carry
+    pub fn ofsub3() -> i32 {
+        unsafe { idalib_hexrays_role_ofsub3() }.into()
+    }
+    /// Integer absolute value
+    pub fn abs() -> i32 {
+        unsafe { idalib_hexrays_role_abs() }.into()
+    }
+    /// 3-way compare helper, returns -1/0/1
+    pub fn three_way_cmp0() -> i32 {
+        unsafe { idalib_hexrays_role_3waycmp0() }.into()
+    }
+    /// 3-way compare helper, returns 0/1/2
+    pub fn three_way_cmp1() -> i32 {
+        unsafe { idalib_hexrays_role_3waycmp1() }.into()
+    }
+    /// wchar_t *wmemcpy(wchar_t *dst, const wchar_t *src, size_t n)
+    pub fn wmemcpy() -> i32 {
+        unsafe { idalib_hexrays_role_wmemcpy() }.into()
+    }
+    /// wchar_t *wmemset(wchar_t *dst, wchar_t wc, size_t n)
+    pub fn wmemset() -> i32 {
+        unsafe { idalib_hexrays_role_wmemset() }.into()
+    }
+    /// wchar_t *wcscpy(wchar_t *dst, const wchar_t *src)
+    pub fn wcscpy() -> i32 {
+        unsafe { idalib_hexrays_role_wcscpy() }.into()
+    }
+    /// size_t wcslen(const wchar_t *s)
+    pub fn wcslen() -> i32 {
+        unsafe { idalib_hexrays_role_wcslen() }.into()
+    }
+    /// wchar_t *wcscat(wchar_t *dst, const wchar_t *src)
+    pub fn wcscat() -> i32 {
+        unsafe { idalib_hexrays_role_wcscat() }.into()
+    }
+    /// SSE compare 4-byte (e.g. _mm_cmpgt_ss)
+    pub fn sse_cmp4() -> i32 {
+        unsafe { idalib_hexrays_role_sse_cmp4() }.into()
+    }
+    /// SSE compare 8-byte (e.g. _mm_cmpgt_sd)
+    pub fn sse_cmp8() -> i32 {
+        unsafe { idalib_hexrays_role_sse_cmp8() }.into()
+    }
+}
+
+/// Get the name of a function role.
+pub fn role_name(role: i32) -> String {
+    use crate::ffi::hexrays::idalib_hexrays_role_name;
+    unsafe { idalib_hexrays_role_name(c_int(role)) }
+}
+
+// ============================================================================
+// Item Preciser Constants (for comment locations)
+// ============================================================================
+
+/// Item preciser constants for specifying comment locations in pseudocode.
+/// Use with `CFunction::get_user_cmt()` and `set_user_cmt()`.
+pub mod itp {
+    use crate::ffi::hexrays::*;
+    use autocxx::c_int;
+
+    /// No specific position
+    pub fn empty() -> i32 {
+        unsafe { idalib_hexrays_itp_empty() }.into()
+    }
+    /// First call argument position
+    pub fn arg1() -> i32 {
+        unsafe { idalib_hexrays_itp_arg1() }.into()
+    }
+    /// Last (64th) call argument position
+    pub fn arg64() -> i32 {
+        unsafe { idalib_hexrays_itp_arg64() }.into()
+    }
+    /// Opening parenthesis
+    pub fn brace1() -> i32 {
+        unsafe { idalib_hexrays_itp_brace1() }.into()
+    }
+    /// __asm line
+    pub fn asm_line() -> i32 {
+        unsafe { idalib_hexrays_itp_asm() }.into()
+    }
+    /// else keyword
+    pub fn else_kw() -> i32 {
+        unsafe { idalib_hexrays_itp_else() }.into()
+    }
+    /// do keyword
+    pub fn do_kw() -> i32 {
+        unsafe { idalib_hexrays_itp_do() }.into()
+    }
+    /// Semicolon
+    pub fn semi() -> i32 {
+        unsafe { idalib_hexrays_itp_semi() }.into()
+    }
+    /// Opening curly brace
+    pub fn curly1() -> i32 {
+        unsafe { idalib_hexrays_itp_curly1() }.into()
+    }
+    /// Closing curly brace
+    pub fn curly2() -> i32 {
+        unsafe { idalib_hexrays_itp_curly2() }.into()
+    }
+    /// Closing parenthesis
+    pub fn brace2() -> i32 {
+        unsafe { idalib_hexrays_itp_brace2() }.into()
+    }
+    /// Colon (label)
+    pub fn colon() -> i32 {
+        unsafe { idalib_hexrays_itp_colon() }.into()
+    }
+    /// Opening block comment (printed before item)
+    pub fn block1() -> i32 {
+        unsafe { idalib_hexrays_itp_block1() }.into()
+    }
+    /// Closing block comment (printed after item)
+    pub fn block2() -> i32 {
+        unsafe { idalib_hexrays_itp_block2() }.into()
+    }
+    /// Case statement (bit flag)
+    pub fn case_flag() -> i32 {
+        unsafe { idalib_hexrays_itp_case() }.into()
+    }
+    /// Sign bit for negative case values
+    pub fn sign_flag() -> i32 {
+        unsafe { idalib_hexrays_itp_sign() }.into()
+    }
+    /// Get item preciser for call argument at index (0-63)
+    pub fn for_arg(argnum: i32) -> i32 {
+        unsafe { idalib_hexrays_itp_for_arg(c_int(argnum)) }.into()
+    }
+}
+
+// ============================================================================
+// Number Format Property Bits
+// ============================================================================
+
+/// Number format property bits for controlling numeric display.
+pub mod numformat {
+    use crate::ffi::hexrays::*;
+
+    /// Number format has been fixed by user
+    pub fn fixed() -> i32 {
+        unsafe { idalib_hexrays_nf_fixed() }.into()
+    }
+    /// User asked to negate the constant
+    pub fn negate() -> i32 {
+        unsafe { idalib_hexrays_nf_negate() }.into()
+    }
+    /// User asked to invert bits of the constant
+    pub fn bitnot() -> i32 {
+        unsafe { idalib_hexrays_nf_bitnot() }.into()
     }
 }

@@ -1384,6 +1384,373 @@ inline rust::String idalib_hexrays_mop_dstr(const mop_t *op) {
 }
 
 // ============================================================================
+// Extended mop_t predicates and accessors
+// ============================================================================
+
+// Check if operand is empty (mop_z)
+inline bool idalib_hexrays_mop_empty(const mop_t *op) {
+  return op && op->empty();
+}
+
+// Check if operand is a global variable
+inline bool idalib_hexrays_mop_is_glbvar(const mop_t *op) {
+  return op && op->is_glbvar();
+}
+
+// Check if operand is a stack variable
+inline bool idalib_hexrays_mop_is_stkvar(const mop_t *op) {
+  return op && op->is_stkvar();
+}
+
+// Check if operand is an argument list (mop_f - call info)
+inline bool idalib_hexrays_mop_is_arglist(const mop_t *op) {
+  return op && op->is_arglist();
+}
+
+// Check if operand is a condition code register
+inline bool idalib_hexrays_mop_is_cc(const mop_t *op) {
+  return op && op->is_cc();
+}
+
+// Check if operand is a block reference
+inline bool idalib_hexrays_mop_is_mblock(const mop_t *op) {
+  return op && op->is_mblock();
+}
+
+// Check if operand is scattered
+inline bool idalib_hexrays_mop_is_scattered(const mop_t *op) {
+  return op && op->is_scattered();
+}
+
+// Check if operand is address of global
+inline bool idalib_hexrays_mop_is_glbaddr(const mop_t *op) {
+  return op && op->is_glbaddr();
+}
+
+// Check if operand is address of stack variable
+inline bool idalib_hexrays_mop_is_stkaddr(const mop_t *op) {
+  return op && op->is_stkaddr();
+}
+
+// Check if operand is a helper function name
+inline bool idalib_hexrays_mop_is_helper(const mop_t *op) {
+  return op && op->t == mop_h;
+}
+
+// Check if operand is a string literal
+inline bool idalib_hexrays_mop_is_strlit(const mop_t *op) {
+  return op && op->t == mop_str;
+}
+
+// Check if operand is a floating point constant
+inline bool idalib_hexrays_mop_is_fpconst(const mop_t *op) {
+  return op && op->t == mop_fn;
+}
+
+// Check if operand is a pair
+inline bool idalib_hexrays_mop_is_pair(const mop_t *op) {
+  return op && op->t == mop_p;
+}
+
+// Check if operand is switch cases
+inline bool idalib_hexrays_mop_is_cases(const mop_t *op) {
+  return op && op->t == mop_c;
+}
+
+// ============================================================================
+// mop_t value tests
+// ============================================================================
+
+// Check if operand is a constant and optionally get its value
+inline bool idalib_hexrays_mop_is_constant(const mop_t *op, uint64_t *out_value) {
+  if (!op) return false;
+  uint64 val;
+  bool result = op->is_constant(&val, true);
+  if (result && out_value) {
+    *out_value = val;
+  }
+  return result;
+}
+
+// Check if operand is zero
+inline bool idalib_hexrays_mop_is_zero(const mop_t *op) {
+  return op && op->is_zero();
+}
+
+// Check if operand is one
+inline bool idalib_hexrays_mop_is_one(const mop_t *op) {
+  return op && op->is_one();
+}
+
+// Check if operand is a positive constant
+inline bool idalib_hexrays_mop_is_positive_constant(const mop_t *op) {
+  return op && op->is_positive_constant();
+}
+
+// Check if operand is a negative constant
+inline bool idalib_hexrays_mop_is_negative_constant(const mop_t *op) {
+  return op && op->is_negative_constant();
+}
+
+// Check if values are only 0 and 1
+inline bool idalib_hexrays_mop_is01(const mop_t *op) {
+  return op && op->is01();
+}
+
+// Check if operand has side effects
+inline bool idalib_hexrays_mop_has_side_effects(const mop_t *op, bool include_ldx) {
+  return op && op->has_side_effects(include_ldx);
+}
+
+// ============================================================================
+// mop_t properties
+// ============================================================================
+
+// Get operand properties (oprops field)
+inline int idalib_hexrays_mop_oprops(const mop_t *op) {
+  return op ? op->oprops : 0;
+}
+
+// Get value number
+inline int idalib_hexrays_mop_valnum(const mop_t *op) {
+  return op ? op->valnum : 0;
+}
+
+// Check if operand is a UDT (struct/union)
+inline bool idalib_hexrays_mop_is_udt(const mop_t *op) {
+  return op && op->is_udt();
+}
+
+// Check if operand is probably floating point
+inline bool idalib_hexrays_mop_probably_floating(const mop_t *op) {
+  return op && op->probably_floating();
+}
+
+// Check if operand uses undefined value
+inline bool idalib_hexrays_mop_is_undef_val(const mop_t *op) {
+  return op && op->is_undef_val();
+}
+
+// Check if operand is a low address offset
+inline bool idalib_hexrays_mop_is_lowaddr(const mop_t *op) {
+  return op && op->is_lowaddr();
+}
+
+// ============================================================================
+// mop_t value accessors
+// ============================================================================
+
+// Get helper function name (for mop_h)
+inline rust::String idalib_hexrays_mop_helper_name(const mop_t *op) {
+  if (op && op->t == mop_h && op->helper) {
+    return rust::String(op->helper);
+  }
+  return rust::String();
+}
+
+// Get string literal value (for mop_str)
+inline rust::String idalib_hexrays_mop_strlit(const mop_t *op) {
+  if (op && op->t == mop_str && op->cstr) {
+    return rust::String(op->cstr);
+  }
+  return rust::String();
+}
+
+// Get block reference number (for mop_b)
+inline int idalib_hexrays_mop_blkref(const mop_t *op) {
+  if (op && op->t == mop_b) {
+    return op->b;
+  }
+  return -1;
+}
+
+// Get signed value for number operand
+inline int64_t idalib_hexrays_mop_signed_value(const mop_t *op) {
+  if (op && op->t == mop_n && op->nnn) {
+    return op->signed_value();
+  }
+  return 0;
+}
+
+// Get unsigned value for number operand
+inline uint64_t idalib_hexrays_mop_unsigned_value(const mop_t *op) {
+  if (op && op->t == mop_n && op->nnn) {
+    return op->unsigned_value();
+  }
+  return 0;
+}
+
+// ============================================================================
+// mop_pair_t accessors (for mop_p operands)
+// ============================================================================
+
+// Get the low operand of a pair
+inline mop_t *idalib_hexrays_mop_pair_low(mop_t *op) {
+  if (op && op->t == mop_p && op->pair) {
+    return &op->pair->lop;
+  }
+  return nullptr;
+}
+
+// Get the high operand of a pair
+inline mop_t *idalib_hexrays_mop_pair_high(mop_t *op) {
+  if (op && op->t == mop_p && op->pair) {
+    return &op->pair->hop;
+  }
+  return nullptr;
+}
+
+// ============================================================================
+// mcallinfo_t accessors (for mop_f operands - call info)
+// ============================================================================
+
+// Get the callee address
+inline uint64_t idalib_hexrays_mop_call_callee(const mop_t *op) {
+  if (op && op->t == mop_f && op->f) {
+    return op->f->callee;
+  }
+  return BADADDR;
+}
+
+// Get the number of call arguments
+inline int idalib_hexrays_mop_call_args_count(const mop_t *op) {
+  if (op && op->t == mop_f && op->f) {
+    return (int)op->f->args.size();
+  }
+  return 0;
+}
+
+// Get the number of solid (non-variadic) arguments
+inline int idalib_hexrays_mop_call_solid_args(const mop_t *op) {
+  if (op && op->t == mop_f && op->f) {
+    return op->f->solid_args;
+  }
+  return 0;
+}
+
+// Check if call is to variadic function
+inline bool idalib_hexrays_mop_call_is_vararg(const mop_t *op) {
+  if (op && op->t == mop_f && op->f) {
+    return op->f->is_vararg();
+  }
+  return false;
+}
+
+// Get call info flags
+inline int idalib_hexrays_mop_call_flags(const mop_t *op) {
+  if (op && op->t == mop_f && op->f) {
+    return op->f->flags;
+  }
+  return 0;
+}
+
+// Check if call doesn't return
+inline bool idalib_hexrays_mop_call_is_noret(const mop_t *op) {
+  if (op && op->t == mop_f && op->f) {
+    return (op->f->flags & FCI_NORET) != 0;
+  }
+  return false;
+}
+
+// Check if call is to pure function
+inline bool idalib_hexrays_mop_call_is_pure(const mop_t *op) {
+  if (op && op->t == mop_f && op->f) {
+    return (op->f->flags & FCI_PURE) != 0;
+  }
+  return false;
+}
+
+// Check if call has no side effects
+inline bool idalib_hexrays_mop_call_is_noside(const mop_t *op) {
+  if (op && op->t == mop_f && op->f) {
+    return (op->f->flags & FCI_NOSIDE) != 0;
+  }
+  return false;
+}
+
+// Get return type as string
+inline rust::String idalib_hexrays_mop_call_return_type(const mop_t *op) {
+  if (op && op->t == mop_f && op->f) {
+    qstring out;
+    op->f->return_type.print(&out);
+    return rust::String(out.c_str());
+  }
+  return rust::String();
+}
+
+// Get call argument at index (returns the operand)
+inline mop_t *idalib_hexrays_mop_call_arg_at(mop_t *op, int idx) {
+  if (op && op->t == mop_f && op->f && idx >= 0 && idx < (int)op->f->args.size()) {
+    return &op->f->args[idx];
+  }
+  return nullptr;
+}
+
+// Get call argument type as string
+inline rust::String idalib_hexrays_mop_call_arg_type(const mop_t *op, int idx) {
+  if (op && op->t == mop_f && op->f && idx >= 0 && idx < (int)op->f->args.size()) {
+    qstring out;
+    op->f->args[idx].type.print(&out);
+    return rust::String(out.c_str());
+  }
+  return rust::String();
+}
+
+// Get call argument name
+inline rust::String idalib_hexrays_mop_call_arg_name(const mop_t *op, int idx) {
+  if (op && op->t == mop_f && op->f && idx >= 0 && idx < (int)op->f->args.size()) {
+    return rust::String(op->f->args[idx].name.c_str());
+  }
+  return rust::String();
+}
+
+// Get function role
+inline int idalib_hexrays_mop_call_role(const mop_t *op) {
+  if (op && op->t == mop_f && op->f) {
+    return static_cast<int>(op->f->role);
+  }
+  return 0; // ROLE_UNK
+}
+
+// ============================================================================
+// mcases_t accessors (for mop_c operands - switch cases)
+// ============================================================================
+
+// Get number of switch cases
+inline int idalib_hexrays_mop_cases_count(const mop_t *op) {
+  if (op && op->t == mop_c && op->c) {
+    return (int)op->c->size();
+  }
+  return 0;
+}
+
+// Get target block for case at index
+inline int idalib_hexrays_mop_case_target(const mop_t *op, int idx) {
+  if (op && op->t == mop_c && op->c && idx >= 0 && idx < (int)op->c->size()) {
+    return op->c->targets[idx];
+  }
+  return -1;
+}
+
+// Get number of values for case at index
+inline int idalib_hexrays_mop_case_values_count(const mop_t *op, int idx) {
+  if (op && op->t == mop_c && op->c && idx >= 0 && idx < (int)op->c->size()) {
+    return (int)op->c->values[idx].size();
+  }
+  return 0;
+}
+
+// Get case value at case_idx, value_idx
+inline uint64_t idalib_hexrays_mop_case_value(const mop_t *op, int case_idx, int val_idx) {
+  if (op && op->t == mop_c && op->c && 
+      case_idx >= 0 && case_idx < (int)op->c->size() &&
+      val_idx >= 0 && val_idx < (int)op->c->values[case_idx].size()) {
+    return op->c->values[case_idx][val_idx];
+  }
+  return 0;
+}
+
+// ============================================================================
 // minsn_t additional operations
 // ============================================================================
 
@@ -2097,4 +2464,207 @@ inline void idalib_hexrays_remove_callback() {
 // Check if callback is installed
 inline bool idalib_hexrays_has_callback() {
     return g_hexrays_callback_installed;
+}
+
+// ============================================================================
+// Function Role Constants (funcrole_t)
+// ============================================================================
+
+inline int idalib_hexrays_role_unk() { return ROLE_UNK; }
+inline int idalib_hexrays_role_empty() { return ROLE_EMPTY; }
+inline int idalib_hexrays_role_memset() { return ROLE_MEMSET; }
+inline int idalib_hexrays_role_memset32() { return ROLE_MEMSET32; }
+inline int idalib_hexrays_role_memset64() { return ROLE_MEMSET64; }
+inline int idalib_hexrays_role_memcpy() { return ROLE_MEMCPY; }
+inline int idalib_hexrays_role_strcpy() { return ROLE_STRCPY; }
+inline int idalib_hexrays_role_strlen() { return ROLE_STRLEN; }
+inline int idalib_hexrays_role_strcat() { return ROLE_STRCAT; }
+inline int idalib_hexrays_role_tail() { return ROLE_TAIL; }
+inline int idalib_hexrays_role_bug() { return ROLE_BUG; }
+inline int idalib_hexrays_role_alloca() { return ROLE_ALLOCA; }
+inline int idalib_hexrays_role_bswap() { return ROLE_BSWAP; }
+inline int idalib_hexrays_role_present() { return ROLE_PRESENT; }
+inline int idalib_hexrays_role_containing_record() { return ROLE_CONTAINING_RECORD; }
+inline int idalib_hexrays_role_fastfail() { return ROLE_FASTFAIL; }
+inline int idalib_hexrays_role_readflags() { return ROLE_READFLAGS; }
+inline int idalib_hexrays_role_is_mul_ok() { return ROLE_IS_MUL_OK; }
+inline int idalib_hexrays_role_saturated_mul() { return ROLE_SATURATED_MUL; }
+inline int idalib_hexrays_role_bittest() { return ROLE_BITTEST; }
+inline int idalib_hexrays_role_bittestandset() { return ROLE_BITTESTANDSET; }
+inline int idalib_hexrays_role_bittestandreset() { return ROLE_BITTESTANDRESET; }
+inline int idalib_hexrays_role_bittestandcomplement() { return ROLE_BITTESTANDCOMPLEMENT; }
+inline int idalib_hexrays_role_va_arg() { return ROLE_VA_ARG; }
+inline int idalib_hexrays_role_va_copy() { return ROLE_VA_COPY; }
+inline int idalib_hexrays_role_va_start() { return ROLE_VA_START; }
+inline int idalib_hexrays_role_va_end() { return ROLE_VA_END; }
+inline int idalib_hexrays_role_rol() { return ROLE_ROL; }
+inline int idalib_hexrays_role_ror() { return ROLE_ROR; }
+inline int idalib_hexrays_role_cfsub3() { return ROLE_CFSUB3; }
+inline int idalib_hexrays_role_ofsub3() { return ROLE_OFSUB3; }
+inline int idalib_hexrays_role_abs() { return ROLE_ABS; }
+inline int idalib_hexrays_role_3waycmp0() { return ROLE_3WAYCMP0; }
+inline int idalib_hexrays_role_3waycmp1() { return ROLE_3WAYCMP1; }
+inline int idalib_hexrays_role_wmemcpy() { return ROLE_WMEMCPY; }
+inline int idalib_hexrays_role_wmemset() { return ROLE_WMEMSET; }
+inline int idalib_hexrays_role_wcscpy() { return ROLE_WCSCPY; }
+inline int idalib_hexrays_role_wcslen() { return ROLE_WCSLEN; }
+inline int idalib_hexrays_role_wcscat() { return ROLE_WCSCAT; }
+inline int idalib_hexrays_role_sse_cmp4() { return ROLE_SSE_CMP4; }
+inline int idalib_hexrays_role_sse_cmp8() { return ROLE_SSE_CMP8; }
+
+// Get role name as string
+inline rust::String idalib_hexrays_role_name(int role) {
+  switch (role) {
+    case ROLE_UNK: return rust::String("unknown");
+    case ROLE_EMPTY: return rust::String("empty");
+    case ROLE_MEMSET: return rust::String("memset");
+    case ROLE_MEMSET32: return rust::String("memset32");
+    case ROLE_MEMSET64: return rust::String("memset64");
+    case ROLE_MEMCPY: return rust::String("memcpy");
+    case ROLE_STRCPY: return rust::String("strcpy");
+    case ROLE_STRLEN: return rust::String("strlen");
+    case ROLE_STRCAT: return rust::String("strcat");
+    case ROLE_TAIL: return rust::String("tail");
+    case ROLE_BUG: return rust::String("bug");
+    case ROLE_ALLOCA: return rust::String("alloca");
+    case ROLE_BSWAP: return rust::String("bswap");
+    case ROLE_PRESENT: return rust::String("present");
+    case ROLE_CONTAINING_RECORD: return rust::String("containing_record");
+    case ROLE_FASTFAIL: return rust::String("fastfail");
+    case ROLE_READFLAGS: return rust::String("readflags");
+    case ROLE_IS_MUL_OK: return rust::String("is_mul_ok");
+    case ROLE_SATURATED_MUL: return rust::String("saturated_mul");
+    case ROLE_BITTEST: return rust::String("bittest");
+    case ROLE_BITTESTANDSET: return rust::String("bittestandset");
+    case ROLE_BITTESTANDRESET: return rust::String("bittestandreset");
+    case ROLE_BITTESTANDCOMPLEMENT: return rust::String("bittestandcomplement");
+    case ROLE_VA_ARG: return rust::String("va_arg");
+    case ROLE_VA_COPY: return rust::String("va_copy");
+    case ROLE_VA_START: return rust::String("va_start");
+    case ROLE_VA_END: return rust::String("va_end");
+    case ROLE_ROL: return rust::String("rol");
+    case ROLE_ROR: return rust::String("ror");
+    case ROLE_CFSUB3: return rust::String("cfsub3");
+    case ROLE_OFSUB3: return rust::String("ofsub3");
+    case ROLE_ABS: return rust::String("abs");
+    case ROLE_3WAYCMP0: return rust::String("3waycmp0");
+    case ROLE_3WAYCMP1: return rust::String("3waycmp1");
+    case ROLE_WMEMCPY: return rust::String("wmemcpy");
+    case ROLE_WMEMSET: return rust::String("wmemset");
+    case ROLE_WCSCPY: return rust::String("wcscpy");
+    case ROLE_WCSLEN: return rust::String("wcslen");
+    case ROLE_WCSCAT: return rust::String("wcscat");
+    case ROLE_SSE_CMP4: return rust::String("sse_cmp4");
+    case ROLE_SSE_CMP8: return rust::String("sse_cmp8");
+    default: return rust::String("unknown");
+  }
+}
+
+// ============================================================================
+// Item Preciser Constants (for comment locations)
+// ============================================================================
+
+inline int idalib_hexrays_itp_empty() { return ITP_EMPTY; }
+inline int idalib_hexrays_itp_arg1() { return ITP_ARG1; }
+inline int idalib_hexrays_itp_arg64() { return ITP_ARG64; }
+inline int idalib_hexrays_itp_brace1() { return ITP_BRACE1; }
+inline int idalib_hexrays_itp_asm() { return ITP_ASM; }
+inline int idalib_hexrays_itp_else() { return ITP_ELSE; }
+inline int idalib_hexrays_itp_do() { return ITP_DO; }
+inline int idalib_hexrays_itp_semi() { return ITP_SEMI; }
+inline int idalib_hexrays_itp_curly1() { return ITP_CURLY1; }
+inline int idalib_hexrays_itp_curly2() { return ITP_CURLY2; }
+inline int idalib_hexrays_itp_brace2() { return ITP_BRACE2; }
+inline int idalib_hexrays_itp_colon() { return ITP_COLON; }
+inline int idalib_hexrays_itp_block1() { return ITP_BLOCK1; }
+inline int idalib_hexrays_itp_block2() { return ITP_BLOCK2; }
+inline int idalib_hexrays_itp_case() { return ITP_CASE; }
+inline int idalib_hexrays_itp_sign() { return ITP_SIGN; }
+
+// ============================================================================
+// User Comments API
+// ============================================================================
+
+// Get user comment at a specific location (ea + item_preciser)
+inline rust::String idalib_hexrays_cfunc_get_user_cmt(const cfunc_t *cfunc, ea_t ea, int itp) {
+  if (!cfunc) return rust::String();
+  treeloc_t loc;
+  loc.ea = ea;
+  loc.itp = static_cast<item_preciser_t>(itp);
+  const char *cmt = cfunc->get_user_cmt(loc, RETRIEVE_ALWAYS);
+  return cmt ? rust::String(cmt) : rust::String();
+}
+
+// Set user comment at a specific location
+inline void idalib_hexrays_cfunc_set_user_cmt(cfunc_t *cfunc, ea_t ea, int itp, rust::Str cmt) {
+  if (!cfunc) return;
+  treeloc_t loc;
+  loc.ea = ea;
+  loc.itp = static_cast<item_preciser_t>(itp);
+  std::string cmt_str(cmt.data(), cmt.size());
+  cfunc->set_user_cmt(loc, cmt_str.empty() ? nullptr : cmt_str.c_str());
+}
+
+// Get number of user comments
+inline size_t idalib_hexrays_cfunc_user_cmts_count(const cfunc_t *cfunc) {
+  if (!cfunc || !cfunc->user_cmts) return 0;
+  return cfunc->user_cmts->size();
+}
+
+// ============================================================================
+// User Labels API
+// ============================================================================
+
+// Get user label at an address
+inline rust::String idalib_hexrays_cfunc_get_user_label(const cfunc_t *cfunc, int label_num) {
+  if (!cfunc || !cfunc->user_labels) return rust::String();
+  for (auto it = cfunc->user_labels->begin(); it != cfunc->user_labels->end(); ++it) {
+    if (it->first == label_num) {
+      return rust::String(it->second.c_str());
+    }
+  }
+  return rust::String();
+}
+
+// Set user label
+inline void idalib_hexrays_cfunc_set_user_label(cfunc_t *cfunc, int label_num, rust::Str label) {
+  if (!cfunc) return;
+  if (!cfunc->user_labels) {
+    // Need to create - but we can't easily create a new one via FFI
+    // This would require save_user_labels/restore_user_labels
+    return;
+  }
+  std::string label_str(label.data(), label.size());
+  (*cfunc->user_labels)[label_num] = qstring(label_str.c_str());
+}
+
+// Get number of user labels
+inline size_t idalib_hexrays_cfunc_user_labels_count(const cfunc_t *cfunc) {
+  if (!cfunc || !cfunc->user_labels) return 0;
+  return cfunc->user_labels->size();
+}
+
+// ============================================================================
+// Number Format API
+// ============================================================================
+
+// Number format property bits
+inline int idalib_hexrays_nf_fixed() { return NF_FIXED; }
+inline int idalib_hexrays_nf_negate() { return NF_NEGATE; }
+inline int idalib_hexrays_nf_bitnot() { return NF_BITNOT; }
+
+// Get number of user-defined number formats
+inline size_t idalib_hexrays_cfunc_numforms_count(const cfunc_t *cfunc) {
+  if (!cfunc || !cfunc->numforms) return 0;
+  return cfunc->numforms->size();
+}
+
+// ============================================================================
+// CItem Tree Location Helpers
+// ============================================================================
+
+// Get the item preciser for argument N (for placing comments after call arguments)
+inline int idalib_hexrays_itp_for_arg(int argnum) {
+  if (argnum < 0 || argnum > 63) return ITP_EMPTY;
+  return ITP_ARG1 + argnum;
 }

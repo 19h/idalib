@@ -1084,3 +1084,622 @@ inline int idalib_hexrays_cit_goto() { return cit_goto; }
 inline int idalib_hexrays_cit_asm() { return cit_asm; }
 inline int idalib_hexrays_cit_try() { return cit_try; }
 inline int idalib_hexrays_cit_throw() { return cit_throw; }
+
+// ============================================================================
+// Switch cases - use cinsn_t* and indices to avoid exposing ccases_t/ccase_t
+// ============================================================================
+
+// Get number of case groups in switch (already exists as idalib_hexrays_cinsn_switch_cases_count)
+
+// Get number of values in a case at index
+inline size_t idalib_hexrays_cinsn_switch_case_values_count(cinsn_t *s, size_t case_idx) {
+  if (s && s->op == cit_switch && s->cswitch) {
+    ccases_t &cases = s->cswitch->cases;
+    if (case_idx < cases.size()) {
+      return cases[case_idx].values.size();
+    }
+  }
+  return 0;
+}
+
+// Get case value at (case_idx, value_idx)
+inline uint64_t idalib_hexrays_cinsn_switch_case_value_at(cinsn_t *s, size_t case_idx, size_t val_idx) {
+  if (s && s->op == cit_switch && s->cswitch) {
+    ccases_t &cases = s->cswitch->cases;
+    if (case_idx < cases.size() && val_idx < cases[case_idx].values.size()) {
+      return cases[case_idx].values[val_idx];
+    }
+  }
+  return 0;
+}
+
+// Get case body (ccase_t inherits from cinsn_t, so the body is the case itself)
+inline cinsn_t *idalib_hexrays_cinsn_switch_case_body(cinsn_t *s, size_t case_idx) {
+  if (s && s->op == cit_switch && s->cswitch) {
+    ccases_t &cases = s->cswitch->cases;
+    if (case_idx < cases.size()) {
+      return &cases[case_idx];
+    }
+  }
+  return nullptr;
+}
+
+// ============================================================================
+// Try/Throw (ctry_t / cthrow_t)
+// ============================================================================
+
+// Get try block - returns the try body as a cblock_t iterator to first statement
+// ctry_t inherits from cblock_t, so the try body IS the ctry_t itself
+inline cinsn_t *idalib_hexrays_cinsn_try_first_stmt(cinsn_t *s) {
+  if (s && s->op == cit_try && s->ctry && !s->ctry->empty()) {
+    return &s->ctry->front();
+  }
+  return nullptr;
+}
+
+// Get number of catch blocks
+inline size_t idalib_hexrays_ctry_catches_count(const cinsn_t *s) {
+  if (s && s->op == cit_try && s->ctry) {
+    return s->ctry->catchs.size();
+  }
+  return 0;
+}
+
+// Get catch block at index - returns first statement in catch block
+inline cinsn_t *idalib_hexrays_ctry_catch_at(cinsn_t *s, size_t idx) {
+  if (s && s->op == cit_try && s->ctry && idx < s->ctry->catchs.size()) {
+    ccatch_t &c = s->ctry->catchs[idx];
+    if (!c.empty()) {
+      return &c.front();
+    }
+  }
+  return nullptr;
+}
+
+// Get catch expression count at catch index
+inline size_t idalib_hexrays_ctry_catch_expr_count(const cinsn_t *s, size_t idx) {
+  if (s && s->op == cit_try && s->ctry && idx < s->ctry->catchs.size()) {
+    return s->ctry->catchs[idx].exprs.size();
+  }
+  return 0;
+}
+
+// Check if catch at index is "catch all" (catches everything)
+inline bool idalib_hexrays_ctry_catch_is_catch_all(const cinsn_t *s, size_t idx) {
+  if (s && s->op == cit_try && s->ctry && idx < s->ctry->catchs.size()) {
+    return s->ctry->catchs[idx].is_catch_all();
+  }
+  return false;
+}
+
+// Get catch object expression at (catch_idx, expr_idx)
+inline cexpr_t *idalib_hexrays_ctry_catch_obj_expr(cinsn_t *s, size_t catch_idx, size_t expr_idx) {
+  if (s && s->op == cit_try && s->ctry && catch_idx < s->ctry->catchs.size()) {
+    ccatch_t &c = s->ctry->catchs[catch_idx];
+    if (expr_idx < c.exprs.size()) {
+      return &c.exprs[expr_idx].obj;
+    }
+  }
+  return nullptr;
+}
+
+// Get throw expression
+inline cexpr_t *idalib_hexrays_cinsn_throw_expr(cinsn_t *s) {
+  if (s && s->op == cit_throw && s->cthrow) {
+    return &s->cthrow->expr;
+  }
+  return nullptr;
+}
+
+// ============================================================================
+// Tree navigation
+// ============================================================================
+
+// Find parent of item in ctree
+inline citem_t *idalib_hexrays_cfunc_find_parent_of(cfunc_t *f, const citem_t *item) {
+  if (f && item) {
+    return f->body.find_parent_of(item);
+  }
+  return nullptr;
+}
+
+// Find item by address
+inline citem_t *idalib_hexrays_cfunc_find_by_ea(cfunc_t *f, uint64_t ea) {
+  if (f) {
+    return f->body.find_closest_addr(ea);
+  }
+  return nullptr;
+}
+
+// Check if tree contains an expression
+inline bool idalib_hexrays_cinsn_contains_expr(const cinsn_t *s, const cexpr_t *e) {
+  return s && e && s->contains_expr(e);
+}
+
+// Check if expression is child of item  
+inline bool idalib_hexrays_cexpr_is_child_of(const cexpr_t *e, const citem_t *parent) {
+  return e && parent && e->is_child_of(parent);
+}
+
+// Check expression requires lvalue
+inline bool idalib_hexrays_cexpr_requires_lvalue(const cexpr_t *parent, const cexpr_t *child) {
+  return parent && child && parent->requires_lvalue(child);
+}
+
+// Check expressions have equal effect
+inline bool idalib_hexrays_cexpr_equal_effect(const cexpr_t *a, const cexpr_t *b) {
+  return a && b && a->equal_effect(*b);
+}
+
+// ============================================================================
+// lvar_t modifications
+// ============================================================================
+
+// Set local variable type  
+inline bool idalib_hexrays_lvar_set_type(cfunc_t *f, lvar_t *v, const char *type_str) {
+  if (!f || !v || !type_str) return false;
+  
+  tinfo_t tif;
+  qstring errbuf;
+  if (!parse_decl(&tif, nullptr, nullptr, type_str, PT_VAR | PT_RAWARGS)) {
+    return false;
+  }
+  return v->set_lvar_type(tif);
+}
+
+// Rename local variable (sets user-defined name) - uses mba_t::set_lvar_name
+inline bool idalib_hexrays_lvar_set_name(cfunc_t *f, lvar_t *v, const char *name) {
+  if (!f || !v || !name) return false;
+  mba_t *mba = f->mba;
+  if (!mba) return false;
+  return mba->set_lvar_name(*v, name, CVAR_NAME|CVAR_UNAME);
+}
+
+// Set local variable comment
+inline void idalib_hexrays_lvar_set_cmt(lvar_t *v, const char *cmt) {
+  if (v && cmt) {
+    v->cmt = cmt;
+  }
+}
+
+// Get lvar by index
+inline lvar_t *idalib_hexrays_cfunc_lvar_at(cfunc_t *f, size_t idx) {
+  if (f) {
+    lvars_t *vars = f->get_lvars();
+    if (vars && idx < vars->size()) {
+      return &(*vars)[idx];
+    }
+  }
+  return nullptr;
+}
+
+// Find lvar by name
+inline lvar_t *idalib_hexrays_cfunc_find_lvar_by_name(cfunc_t *f, const char *name) {
+  if (!f || !name) return nullptr;
+  lvars_t *vars = f->get_lvars();
+  if (!vars) return nullptr;
+  
+  for (size_t i = 0; i < vars->size(); i++) {
+    if ((*vars)[i].name == name) {
+      return &(*vars)[i];
+    }
+  }
+  return nullptr;
+}
+
+// ============================================================================
+// mop_t operations - Microcode operands
+// ============================================================================
+
+// Get operand type (mop_z, mop_r, mop_n, etc.)
+inline int idalib_hexrays_mop_type(const mop_t *op) {
+  return op ? static_cast<int>(op->t) : 0;
+}
+
+// Get operand size
+inline int idalib_hexrays_mop_size(const mop_t *op) {
+  return op ? op->size : 0;
+}
+
+// Get operand as register number (if mop_r)
+inline int idalib_hexrays_mop_reg(const mop_t *op) {
+  return (op && op->t == mop_r) ? op->r : -1;
+}
+
+// Get operand as immediate value (if mop_n)
+inline uint64_t idalib_hexrays_mop_nnn_value(const mop_t *op) {
+  return (op && op->t == mop_n && op->nnn) ? op->nnn->value : 0;
+}
+
+// Get operand as address - for mop_a, returns the address of the pointed operand
+// mop_addr_t inherits from mop_t and wraps another mop_t
+inline const mop_t *idalib_hexrays_mop_addr_target(const mop_t *op) {
+  return (op && op->t == mop_a && op->a) ? op->a : nullptr;
+}
+
+// Get operand as stack offset (if mop_S)
+inline int64_t idalib_hexrays_mop_stkoff(const mop_t *op) {
+  if (op && op->t == mop_S) {
+    return op->s->off;
+  }
+  return 0;
+}
+
+// Get operand as local var index (if mop_l)
+inline int idalib_hexrays_mop_lvar_idx(const mop_t *op) {
+  return (op && op->t == mop_l) ? op->l->idx : -1;
+}
+
+// Get operand as global address (if mop_v)
+inline uint64_t idalib_hexrays_mop_glbaddr(const mop_t *op) {
+  return (op && op->t == mop_v) ? op->g : BADADDR;
+}
+
+// Check if operand is a number
+inline bool idalib_hexrays_mop_is_number(const mop_t *op) {
+  return op && op->t == mop_n;
+}
+
+// Check if operand is a register
+inline bool idalib_hexrays_mop_is_reg(const mop_t *op) {
+  return op && op->t == mop_r;
+}
+
+// Check if operand is a stack location
+inline bool idalib_hexrays_mop_is_stk(const mop_t *op) {
+  return op && op->t == mop_S;
+}
+
+// Check if operand is a local variable
+inline bool idalib_hexrays_mop_is_lvar(const mop_t *op) {
+  return op && op->t == mop_l;
+}
+
+// Check if operand is a global
+inline bool idalib_hexrays_mop_is_glb(const mop_t *op) {
+  return op && op->t == mop_v;
+}
+
+// Check if operand is an address  
+inline bool idalib_hexrays_mop_is_addr(const mop_t *op) {
+  return op && op->t == mop_a;
+}
+
+// Check if operand is a sub-instruction
+inline bool idalib_hexrays_mop_is_insn(const mop_t *op) {
+  return op && op->t == mop_d;
+}
+
+// Get sub-instruction (if mop_d)
+inline minsn_t *idalib_hexrays_mop_insn(mop_t *op) {
+  return (op && op->t == mop_d) ? op->d : nullptr;
+}
+
+// Print operand
+inline rust::String idalib_hexrays_mop_dstr(const mop_t *op) {
+  if (op) {
+    return rust::String(op->dstr());
+  }
+  return rust::String();
+}
+
+// ============================================================================
+// minsn_t additional operations
+// ============================================================================
+
+// Get left operand
+inline mop_t *idalib_hexrays_minsn_l(minsn_t *insn) {
+  return insn ? &insn->l : nullptr;
+}
+
+// Get right operand
+inline mop_t *idalib_hexrays_minsn_r(minsn_t *insn) {
+  return insn ? &insn->r : nullptr;
+}
+
+// Get destination operand
+inline mop_t *idalib_hexrays_minsn_d(minsn_t *insn) {
+  return insn ? &insn->d : nullptr;
+}
+
+// Check if instruction is a call
+inline bool idalib_hexrays_minsn_is_call(const minsn_t *insn) {
+  return insn && (insn->opcode == m_call || insn->opcode == m_icall);
+}
+
+// Check if instruction is a jump
+inline bool idalib_hexrays_minsn_is_jump(const minsn_t *insn) {
+  return insn && (insn->opcode == m_goto || 
+                  insn->opcode == m_jcnd ||
+                  insn->opcode == m_jtbl);
+}
+
+// Check if instruction is conditional
+inline bool idalib_hexrays_minsn_is_cond(const minsn_t *insn) {
+  return insn && insn->opcode == m_jcnd;
+}
+
+// Check if instruction modifies d operand  
+inline bool idalib_hexrays_minsn_modifies_d(const minsn_t *insn) {
+  return insn && mcode_modifies_d(insn->opcode);
+}
+
+// Find call instruction in block starting from insn
+inline minsn_t *idalib_hexrays_minsn_find_call(minsn_t *insn, bool with_helpers) {
+  return insn ? insn->find_call(with_helpers) : nullptr;
+}
+
+// ============================================================================
+// mba_t additional operations  
+// ============================================================================
+
+// Get stack frame size
+inline int64_t idalib_hexrays_mba_stacksize(const mba_t *mba) {
+  return mba ? mba->stacksize : 0;
+}
+
+// Get number of arguments
+inline int idalib_hexrays_mba_argidx_size(const mba_t *mba) {
+  return mba ? mba->argidx.size() : 0;
+}
+
+// Get min/max addresses
+inline uint64_t idalib_hexrays_mba_minea(const mba_t *mba) {
+  return mba ? mba->mbr.start() : BADADDR;
+}
+
+// Get the first epilog address
+inline uint64_t idalib_hexrays_mba_first_epilog_ea(const mba_t *mba) {
+  return mba ? mba->first_epilog_ea : BADADDR;
+}
+
+// Check mba flags - use the accessor methods since flags is private
+inline bool idalib_hexrays_mba_is_thunk(const mba_t *mba) {
+  return mba && mba->is_thunk();
+}
+
+inline bool idalib_hexrays_mba_is_short(const mba_t *mba) {
+  return mba && mba->short_display();
+}
+
+inline bool idalib_hexrays_mba_has_passregs(const mba_t *mba) {
+  return mba && mba->has_passregs();
+}
+
+// ============================================================================
+// Additional cfunc_t operations
+// ============================================================================
+
+// Get treeloc info - boundaries (use get_boundaries() to ensure it's initialized)
+inline size_t idalib_hexrays_cfunc_boundaries_count(cfunc_t *f) {
+  if (!f) return 0;
+  boundaries_t &b = f->get_boundaries();
+  return b.size();
+}
+
+// Get pseudocode line count
+inline size_t idalib_hexrays_cfunc_pseudocode_line_count(cfunc_t *f) {
+  if (f) {
+    auto &sv = f->get_pseudocode();
+    return sv.size();
+  }
+  return 0;
+}
+
+// Get pseudocode line at index
+inline rust::String idalib_hexrays_cfunc_pseudocode_line_at(cfunc_t *f, size_t idx) {
+  if (f) {
+    auto &sv = f->get_pseudocode();
+    if (idx < sv.size()) {
+      qstring buf;
+      tag_remove(&buf, sv[idx].line);
+      return rust::String(buf.c_str());
+    }
+  }
+  return rust::String();
+}
+
+// Get pseudocode line with tags at index
+inline rust::String idalib_hexrays_cfunc_pseudocode_line_tagged_at(cfunc_t *f, size_t idx) {
+  if (f) {
+    auto &sv = f->get_pseudocode();
+    if (idx < sv.size()) {
+      return rust::String(sv[idx].line.c_str());
+    }
+  }
+  return rust::String();
+}
+
+// Get eamap (address to items mapping) count - use get_eamap() to ensure initialized
+inline size_t idalib_hexrays_cfunc_eamap_count(cfunc_t *f) {
+  if (!f) return 0;
+  eamap_t &m = f->get_eamap();
+  return m.size();
+}
+
+// ============================================================================
+// User data management - save/restore
+// ============================================================================
+
+// Save user defined labels for function
+inline void idalib_hexrays_save_user_labels_ea(uint64_t ea) {
+  save_user_labels(ea, nullptr);
+}
+
+// Save user defined comments for function
+inline void idalib_hexrays_save_user_cmts_ea(uint64_t ea) {
+  save_user_cmts(ea, nullptr);
+}
+
+// Save user defined number formats for function
+inline void idalib_hexrays_save_user_numforms_ea(uint64_t ea) {
+  save_user_numforms(ea, nullptr);
+}
+
+// Save user defined item flags for function
+inline void idalib_hexrays_save_user_iflags_ea(uint64_t ea) {
+  save_user_iflags(ea, nullptr);
+}
+
+// Save user defined union selections for function
+inline void idalib_hexrays_save_user_unions_ea(uint64_t ea) {
+  save_user_unions(ea, nullptr);
+}
+
+// ============================================================================
+// Expression type checking
+// ============================================================================
+
+// Check if type is a pointer to function
+inline bool idalib_hexrays_cexpr_type_is_funcptr(const cexpr_t *e) {
+  if (!e) return false;
+  return e->type.is_funcptr();
+}
+
+// Check if type is a pointer to void
+inline bool idalib_hexrays_cexpr_type_is_pvoid(const cexpr_t *e) {
+  return e && e->type.is_pvoid();
+}
+
+// Check if type is void
+inline bool idalib_hexrays_cexpr_type_is_void(const cexpr_t *e) {
+  return e && e->type.is_void();
+}
+
+// Check if type is a boolean
+inline bool idalib_hexrays_cexpr_type_is_bool(const cexpr_t *e) {
+  return e && e->type.is_bool();
+}
+
+// Check if type is an enum
+inline bool idalib_hexrays_cexpr_type_is_enum(const cexpr_t *e) {
+  return e && e->type.is_enum();
+}
+
+// Check if type is const
+inline bool idalib_hexrays_cexpr_type_is_const(const cexpr_t *e) {
+  return e && e->type.is_const();
+}
+
+// Check if type is volatile
+inline bool idalib_hexrays_cexpr_type_is_volatile(const cexpr_t *e) {
+  return e && e->type.is_volatile();
+}
+
+// Get pointer depth (0 = not a pointer, 1 = T*, 2 = T**, etc.)
+inline int idalib_hexrays_cexpr_type_ptr_depth(const cexpr_t *e) {
+  if (!e) return 0;
+  int depth = 0;
+  tinfo_t t = e->type;
+  while (t.is_ptr()) {
+    depth++;
+    tinfo_t pointed = t.get_pointed_object();
+    if (pointed.empty()) break;
+    t = pointed;
+  }
+  return depth;
+}
+
+// Get array size if array type
+inline int64_t idalib_hexrays_cexpr_type_array_size(const cexpr_t *e) {
+  if (!e || !e->type.is_array()) return -1;
+  return e->type.get_array_nelems();
+}
+
+// Get pointed-to type as string
+inline rust::String idalib_hexrays_cexpr_type_pointed_str(const cexpr_t *e) {
+  if (e && e->type.is_ptr()) {
+    tinfo_t pointed = e->type.get_pointed_object();
+    if (!pointed.empty()) {
+      qstring out;
+      if (pointed.print(&out)) {
+        return rust::String(out.c_str());
+      }
+    }
+  }
+  return rust::String();
+}
+
+// ============================================================================
+// Additional citem_t operations
+// ============================================================================
+
+// Get item index in parent block (if applicable)
+inline int idalib_hexrays_citem_index_in_parent(const cfunc_t *f, const citem_t *item) {
+  if (!f || !item) return -1;
+  
+  const citem_t *parent = f->body.find_parent_of(item);
+  if (!parent || !parent->is_expr()) {
+    // Check if parent is a block
+    if (parent && parent->op == cit_block) {
+      const cblock_t *blk = ((const cinsn_t*)parent)->cblock;
+      if (blk) {
+        int idx = 0;
+        for (auto it = blk->begin(); it != blk->end(); ++it, ++idx) {
+          if (&(*it) == item) return idx;
+        }
+      }
+    }
+  }
+  return -1;
+}
+
+// ============================================================================
+// mcode_t helpers
+// ============================================================================
+
+// Get mcode as category
+inline int idalib_hexrays_mcode_category(int mcode) {
+  // Return general category
+  if (mcode >= m_nop && mcode <= m_ext) return 0;  // data operations
+  if (mcode >= m_ijmp && mcode <= m_ret) return 1; // control flow
+  if (mcode >= m_push && mcode <= m_pop) return 2; // stack
+  return 3; // other
+}
+
+// Check if mcode modifies memory
+inline bool idalib_hexrays_mcode_modifies_mem(int mcode) {
+  return mcode == m_stx || mcode == m_push;
+}
+
+// Check if mcode reads memory
+inline bool idalib_hexrays_mcode_reads_mem(int mcode) {
+  return mcode == m_ldx || mcode == m_pop;
+}
+
+// Check if mcode is a comparison
+inline bool idalib_hexrays_mcode_is_comparison(int mcode) {
+  return mcode >= m_sets && mcode <= m_setle;
+}
+
+// Check if mcode is arithmetic
+inline bool idalib_hexrays_mcode_is_arithmetic(int mcode) {
+  return (mcode >= m_add && mcode <= m_udiv) ||
+         (mcode >= m_fadd && mcode <= m_fdiv);
+}
+
+// Check if mcode is bitwise
+inline bool idalib_hexrays_mcode_is_bitwise(int mcode) {
+  return mcode == m_and || mcode == m_or || mcode == m_xor;
+}
+
+// ============================================================================
+// mop_t type constants
+// ============================================================================
+
+inline int idalib_hexrays_mop_z() { return mop_z; }  // none
+inline int idalib_hexrays_mop_r() { return mop_r; }  // register
+inline int idalib_hexrays_mop_n() { return mop_n; }  // immediate number
+inline int idalib_hexrays_mop_str() { return mop_str; }  // string constant
+inline int idalib_hexrays_mop_d() { return mop_d; }  // result of another instruction
+inline int idalib_hexrays_mop_S() { return mop_S; }  // stack variable
+inline int idalib_hexrays_mop_v() { return mop_v; }  // global variable
+inline int idalib_hexrays_mop_b() { return mop_b; }  // block number
+inline int idalib_hexrays_mop_f() { return mop_f; }  // floating point constant
+inline int idalib_hexrays_mop_l() { return mop_l; }  // local variable
+inline int idalib_hexrays_mop_a() { return mop_a; }  // address of variable
+inline int idalib_hexrays_mop_h() { return mop_h; }  // helper function
+inline int idalib_hexrays_mop_c() { return mop_c; }  // mcases (switch table)
+inline int idalib_hexrays_mop_fn() { return mop_fn; }  // function (for calls)
+inline int idalib_hexrays_mop_p() { return mop_p; }  // pair of operands
+inline int idalib_hexrays_mop_sc() { return mop_sc; }  // scattered

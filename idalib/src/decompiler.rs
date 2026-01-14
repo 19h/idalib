@@ -1,25 +1,1063 @@
+//! Hexrays Decompiler Bindings
+//!
+//! This module provides high-level Rust bindings for the Hexrays decompiler SDK.
+//! It allows you to decompile functions, traverse the C-tree AST, access local
+//! variables, and work with the microcode representation.
+//!
+//! # Overview
+//!
+//! The decompiler produces a C-like AST (ctree) from binary code. The main types are:
+//!
+//! - [`CFunction`] - A decompiled function containing the AST and metadata
+//! - [`CInsn`] - A C statement (if, while, for, block, return, etc.)
+//! - [`CExpr`] - A C expression (arithmetic, calls, variables, etc.)
+//! - [`LocalVar`] - A local variable in the decompiled function
+//! - [`CBlock`] - A block of statements
+//! - [`CArgList`] - Function call arguments
+//!
+//! # Example
+//!
+//! ```rust,ignore
+//! use idalib::idb::IDB;
+//!
+//! let idb = IDB::open("/path/to/binary")?;
+//! if let Some(func) = idb.function_at(0x1000) {
+//!     if let Ok(cfunc) = idb.decompile(&func) {
+//!         println!("Pseudocode:\n{}", cfunc.pseudocode());
+//!         println!("Entry: 0x{:x}", cfunc.entry_ea());
+//!         
+//!         // Iterate over local variables
+//!         for lvar in cfunc.lvars() {
+//!             println!("  {} : {}", lvar.name(), lvar.type_str());
+//!         }
+//!     }
+//! }
+//! ```
+
 use std::marker::PhantomData;
 
+use autocxx::c_int;
+
+use crate::Address;
 use crate::ffi::hexrays::{
-    cblock_iter, cblock_t, cfunc_t, cfuncptr_t, cinsn_t, idalib_hexrays_cblock_iter,
-    idalib_hexrays_cblock_iter_next, idalib_hexrays_cblock_len, idalib_hexrays_cfunc_pseudocode,
+    carg_t,
+    carglist_iter,
+    carglist_t,
+    cblock_iter,
+    cblock_t,
+    cexpr_t,
+    cfunc_t,
+    cfuncptr_t,
+    cinsn_t,
+    citem_t,
+    idalib_hexrays_carg_formal_type_str,
+    // carg_t operations
+    idalib_hexrays_carg_is_vararg,
+    idalib_hexrays_carglist_at,
+    // carglist_t operations
+    idalib_hexrays_carglist_count,
+    idalib_hexrays_carglist_iter,
+    idalib_hexrays_carglist_iter_next,
+    // cblock_t operations
+    idalib_hexrays_cblock_iter,
+    idalib_hexrays_cblock_iter_next,
+    idalib_hexrays_cblock_len,
+    idalib_hexrays_cexpr_call_args,
+    idalib_hexrays_cexpr_exflags,
+    idalib_hexrays_cexpr_helper,
+    idalib_hexrays_cexpr_is_call,
+    idalib_hexrays_cexpr_is_cstr,
+    idalib_hexrays_cexpr_is_fpop,
+    idalib_hexrays_cexpr_is_nice,
+    idalib_hexrays_cexpr_is_undef_val,
+    idalib_hexrays_cexpr_member_offset,
+    idalib_hexrays_cexpr_numval,
+    idalib_hexrays_cexpr_obj_ea,
+    idalib_hexrays_cexpr_ptrsize,
+    idalib_hexrays_cexpr_str,
+    idalib_hexrays_cexpr_type_is_array,
+    idalib_hexrays_cexpr_type_is_float,
+    idalib_hexrays_cexpr_type_is_ptr,
+    idalib_hexrays_cexpr_type_is_signed,
+    idalib_hexrays_cexpr_type_is_struct,
+    idalib_hexrays_cexpr_type_is_union,
+    idalib_hexrays_cexpr_type_is_unsigned,
+    idalib_hexrays_cexpr_type_size,
+    // cexpr_t operations
+    idalib_hexrays_cexpr_type_str,
+    idalib_hexrays_cexpr_var_idx,
+    idalib_hexrays_cexpr_x,
+    idalib_hexrays_cexpr_y,
+    idalib_hexrays_cexpr_z,
+    idalib_hexrays_cfunc_argidx_at,
+    idalib_hexrays_cfunc_argidx_count,
+    idalib_hexrays_cfunc_del_orphan_cmts,
+    // cfunc_t operations
+    idalib_hexrays_cfunc_entry_ea,
+    idalib_hexrays_cfunc_find_label,
+    idalib_hexrays_cfunc_has_orphan_cmts,
+    idalib_hexrays_cfunc_hdrlines,
+    idalib_hexrays_cfunc_lvars_count,
+    idalib_hexrays_cfunc_lvars_iter,
+    idalib_hexrays_cfunc_maturity,
+    idalib_hexrays_cfunc_mba,
+    idalib_hexrays_cfunc_print_dcl,
+    idalib_hexrays_cfunc_pseudocode,
+    idalib_hexrays_cfunc_refresh,
+    idalib_hexrays_cfunc_remove_unused_labels,
+    idalib_hexrays_cfunc_save_user_cmts,
+    idalib_hexrays_cfunc_save_user_iflags,
+    idalib_hexrays_cfunc_save_user_labels,
+    idalib_hexrays_cfunc_save_user_numforms,
+    idalib_hexrays_cfunc_save_user_unions,
+    idalib_hexrays_cfunc_stkoff_delta,
+    idalib_hexrays_cfunc_type_str,
+    idalib_hexrays_cfunc_warning_at,
+    idalib_hexrays_cfunc_warning_ea_at,
+    idalib_hexrays_cfunc_warnings_count,
+    // Basic decompilation
     idalib_hexrays_cfuncptr_inner,
+    // cinsn_t operations
+    idalib_hexrays_cinsn_cblock,
+    idalib_hexrays_cinsn_cexpr,
+    idalib_hexrays_cinsn_contains_free_break,
+    idalib_hexrays_cinsn_contains_free_continue,
+    idalib_hexrays_cinsn_do_body,
+    idalib_hexrays_cinsn_do_cond,
+    idalib_hexrays_cinsn_for_body,
+    idalib_hexrays_cinsn_for_cond,
+    idalib_hexrays_cinsn_for_init,
+    idalib_hexrays_cinsn_for_step,
+    idalib_hexrays_cinsn_goto_label,
+    idalib_hexrays_cinsn_if_cond,
+    idalib_hexrays_cinsn_if_else,
+    idalib_hexrays_cinsn_if_then,
+    idalib_hexrays_cinsn_is_ordinary_flow,
+    idalib_hexrays_cinsn_return_expr,
+    idalib_hexrays_cinsn_switch_cases_count,
+    idalib_hexrays_cinsn_switch_expr,
+    idalib_hexrays_cinsn_while_body,
+    idalib_hexrays_cinsn_while_cond,
+    idalib_hexrays_cit_asm,
+    idalib_hexrays_cit_block,
+    idalib_hexrays_cit_break,
+    idalib_hexrays_cit_continue,
+    idalib_hexrays_cit_do,
+    idalib_hexrays_cit_empty,
+    idalib_hexrays_cit_expr,
+    idalib_hexrays_cit_for,
+    idalib_hexrays_cit_goto,
+    idalib_hexrays_cit_if,
+    idalib_hexrays_cit_return,
+    idalib_hexrays_cit_switch,
+    idalib_hexrays_cit_throw,
+    idalib_hexrays_cit_try,
+    idalib_hexrays_cit_while,
+    idalib_hexrays_citem_contains_label,
+    // citem_t operations
+    idalib_hexrays_citem_ea,
+    idalib_hexrays_citem_is_expr,
+    idalib_hexrays_citem_label_num,
+    idalib_hexrays_citem_op,
+    idalib_hexrays_citem_print,
+    idalib_hexrays_clear_cached_cfuncs,
+    idalib_hexrays_cot_add,
+    idalib_hexrays_cot_asg,
+    idalib_hexrays_cot_asgadd,
+    idalib_hexrays_cot_asgband,
+    idalib_hexrays_cot_asgbor,
+    idalib_hexrays_cot_asgmul,
+    idalib_hexrays_cot_asgsdiv,
+    idalib_hexrays_cot_asgshl,
+    idalib_hexrays_cot_asgsmod,
+    idalib_hexrays_cot_asgsshr,
+    idalib_hexrays_cot_asgsub,
+    idalib_hexrays_cot_asgudiv,
+    idalib_hexrays_cot_asgumod,
+    idalib_hexrays_cot_asgushr,
+    idalib_hexrays_cot_asgxor,
+    idalib_hexrays_cot_band,
+    idalib_hexrays_cot_bnot,
+    idalib_hexrays_cot_bor,
+    idalib_hexrays_cot_call,
+    idalib_hexrays_cot_cast,
+    idalib_hexrays_cot_comma,
+    // ctype constants
+    idalib_hexrays_cot_empty,
+    idalib_hexrays_cot_eq,
+    idalib_hexrays_cot_fadd,
+    idalib_hexrays_cot_fdiv,
+    idalib_hexrays_cot_fmul,
+    idalib_hexrays_cot_fneg,
+    idalib_hexrays_cot_fnum,
+    idalib_hexrays_cot_fsub,
+    idalib_hexrays_cot_helper,
+    idalib_hexrays_cot_idx,
+    idalib_hexrays_cot_insn,
+    idalib_hexrays_cot_land,
+    idalib_hexrays_cot_last,
+    idalib_hexrays_cot_lnot,
+    idalib_hexrays_cot_lor,
+    idalib_hexrays_cot_memptr,
+    idalib_hexrays_cot_memref,
+    idalib_hexrays_cot_mul,
+    idalib_hexrays_cot_ne,
+    idalib_hexrays_cot_neg,
+    idalib_hexrays_cot_num,
+    idalib_hexrays_cot_obj,
+    idalib_hexrays_cot_postdec,
+    idalib_hexrays_cot_postinc,
+    idalib_hexrays_cot_predec,
+    idalib_hexrays_cot_preinc,
+    idalib_hexrays_cot_ptr,
+    idalib_hexrays_cot_ref,
+    idalib_hexrays_cot_sdiv,
+    idalib_hexrays_cot_sge,
+    idalib_hexrays_cot_sgt,
+    idalib_hexrays_cot_shl,
+    idalib_hexrays_cot_sizeof,
+    idalib_hexrays_cot_sle,
+    idalib_hexrays_cot_slt,
+    idalib_hexrays_cot_smod,
+    idalib_hexrays_cot_sshr,
+    idalib_hexrays_cot_str,
+    idalib_hexrays_cot_sub,
+    idalib_hexrays_cot_tern,
+    idalib_hexrays_cot_type,
+    idalib_hexrays_cot_udiv,
+    idalib_hexrays_cot_uge,
+    idalib_hexrays_cot_ugt,
+    idalib_hexrays_cot_ule,
+    idalib_hexrays_cot_ult,
+    idalib_hexrays_cot_umod,
+    idalib_hexrays_cot_ushr,
+    idalib_hexrays_cot_var,
+    idalib_hexrays_cot_xor,
+    idalib_hexrays_ctype_name,
+    idalib_hexrays_decomp_all_blks,
+    idalib_hexrays_decomp_no_cache,
+    idalib_hexrays_decomp_no_frame,
+    // Decompilation flags
+    idalib_hexrays_decomp_no_wait,
+    idalib_hexrays_decomp_warnings,
+    idalib_hexrays_has_cached_cfunc,
+    idalib_hexrays_is_assignment_op,
+    idalib_hexrays_is_binary_op,
+    idalib_hexrays_is_commutative_op,
+    idalib_hexrays_is_loop_op,
+    idalib_hexrays_is_lvalue_op,
+    idalib_hexrays_is_relational_op,
+    idalib_hexrays_is_unary_op,
+    idalib_hexrays_lvar_cmt,
+    idalib_hexrays_lvar_defblk,
+    idalib_hexrays_lvar_defea,
+    idalib_hexrays_lvar_get_reg,
+    idalib_hexrays_lvar_get_stkoff,
+    idalib_hexrays_lvar_has_nice_name,
+    idalib_hexrays_lvar_has_user_name,
+    idalib_hexrays_lvar_has_user_type,
+    idalib_hexrays_lvar_is_arg,
+    idalib_hexrays_lvar_is_fake,
+    idalib_hexrays_lvar_is_floating,
+    idalib_hexrays_lvar_is_overlapped,
+    idalib_hexrays_lvar_is_reg_var,
+    idalib_hexrays_lvar_is_result,
+    idalib_hexrays_lvar_is_stk_var,
+    idalib_hexrays_lvar_is_thisarg,
+    idalib_hexrays_lvar_is_typed,
+    idalib_hexrays_lvar_is_used,
+    idalib_hexrays_lvar_is_used_byref,
+    // lvar_t operations
+    idalib_hexrays_lvar_name,
+    idalib_hexrays_lvar_type_str,
+    idalib_hexrays_lvar_width,
+    idalib_hexrays_lvars_iter_next,
+    // Cache management
+    idalib_hexrays_mark_cfunc_dirty,
+    idalib_hexrays_mba_entry_ea,
+    idalib_hexrays_mba_get_mblock,
+    idalib_hexrays_mba_maturity,
+    // Microcode operations
+    idalib_hexrays_mba_qty,
+    idalib_hexrays_mblock_end,
+    idalib_hexrays_mblock_head,
+    idalib_hexrays_mblock_npred,
+    idalib_hexrays_mblock_nsucc,
+    idalib_hexrays_mblock_pred,
+    idalib_hexrays_mblock_serial,
+    idalib_hexrays_mblock_start,
+    idalib_hexrays_mblock_succ,
+    idalib_hexrays_mblock_tail,
+    idalib_hexrays_mblock_type,
+    idalib_hexrays_mcode_name,
+    idalib_hexrays_minsn_dstr,
+    idalib_hexrays_minsn_ea,
+    idalib_hexrays_minsn_next,
+    idalib_hexrays_minsn_opcode,
+    idalib_hexrays_minsn_prev,
+    // Operator helpers
+    idalib_hexrays_negated_relation,
+    idalib_hexrays_swapped_relation,
+    lvar_t,
+    lvars_iter,
+    mba_t,
+    mblock_t,
+    minsn_t,
 };
 use crate::idb::IDB;
 
 pub use crate::ffi::hexrays::{HexRaysError, HexRaysErrorCode};
 
+// ============================================================================
+// C-tree type constants
+// ============================================================================
+
+/// C-tree item types for expressions and statements.
+///
+/// Use these constants to identify what kind of node a [`CItem`] represents.
+pub mod ctype {
+    //! C-tree type constants.
+    //!
+    //! Expression types start with `COT_` and statement types start with `CIT_`.
+
+    use super::*;
+
+    // Expression types (cot_*)
+    /// Empty expression
+    pub fn cot_empty() -> i32 {
+        unsafe { idalib_hexrays_cot_empty() }.into()
+    }
+    /// Comma operator: x, y
+    pub fn cot_comma() -> i32 {
+        unsafe { idalib_hexrays_cot_comma() }.into()
+    }
+    /// Assignment: x = y
+    pub fn cot_asg() -> i32 {
+        unsafe { idalib_hexrays_cot_asg() }.into()
+    }
+    /// Assignment with bitwise or: x |= y
+    pub fn cot_asgbor() -> i32 {
+        unsafe { idalib_hexrays_cot_asgbor() }.into()
+    }
+    /// Assignment with xor: x ^= y
+    pub fn cot_asgxor() -> i32 {
+        unsafe { idalib_hexrays_cot_asgxor() }.into()
+    }
+    /// Assignment with bitwise and: x &= y
+    pub fn cot_asgband() -> i32 {
+        unsafe { idalib_hexrays_cot_asgband() }.into()
+    }
+    /// Assignment with add: x += y
+    pub fn cot_asgadd() -> i32 {
+        unsafe { idalib_hexrays_cot_asgadd() }.into()
+    }
+    /// Assignment with sub: x -= y
+    pub fn cot_asgsub() -> i32 {
+        unsafe { idalib_hexrays_cot_asgsub() }.into()
+    }
+    /// Assignment with mul: x *= y
+    pub fn cot_asgmul() -> i32 {
+        unsafe { idalib_hexrays_cot_asgmul() }.into()
+    }
+    /// Assignment with signed shift right: x >>= y
+    pub fn cot_asgsshr() -> i32 {
+        unsafe { idalib_hexrays_cot_asgsshr() }.into()
+    }
+    /// Assignment with unsigned shift right: x >>= y
+    pub fn cot_asgushr() -> i32 {
+        unsafe { idalib_hexrays_cot_asgushr() }.into()
+    }
+    /// Assignment with shift left: x <<= y
+    pub fn cot_asgshl() -> i32 {
+        unsafe { idalib_hexrays_cot_asgshl() }.into()
+    }
+    /// Assignment with signed div: x /= y
+    pub fn cot_asgsdiv() -> i32 {
+        unsafe { idalib_hexrays_cot_asgsdiv() }.into()
+    }
+    /// Assignment with unsigned div: x /= y
+    pub fn cot_asgudiv() -> i32 {
+        unsafe { idalib_hexrays_cot_asgudiv() }.into()
+    }
+    /// Assignment with signed mod: x %= y
+    pub fn cot_asgsmod() -> i32 {
+        unsafe { idalib_hexrays_cot_asgsmod() }.into()
+    }
+    /// Assignment with unsigned mod: x %= y
+    pub fn cot_asgumod() -> i32 {
+        unsafe { idalib_hexrays_cot_asgumod() }.into()
+    }
+    /// Ternary operator: x ? y : z
+    pub fn cot_tern() -> i32 {
+        unsafe { idalib_hexrays_cot_tern() }.into()
+    }
+    /// Logical or: x || y
+    pub fn cot_lor() -> i32 {
+        unsafe { idalib_hexrays_cot_lor() }.into()
+    }
+    /// Logical and: x && y
+    pub fn cot_land() -> i32 {
+        unsafe { idalib_hexrays_cot_land() }.into()
+    }
+    /// Bitwise or: x | y
+    pub fn cot_bor() -> i32 {
+        unsafe { idalib_hexrays_cot_bor() }.into()
+    }
+    /// Bitwise xor: x ^ y
+    pub fn cot_xor() -> i32 {
+        unsafe { idalib_hexrays_cot_xor() }.into()
+    }
+    /// Bitwise and: x & y
+    pub fn cot_band() -> i32 {
+        unsafe { idalib_hexrays_cot_band() }.into()
+    }
+    /// Equal: x == y
+    pub fn cot_eq() -> i32 {
+        unsafe { idalib_hexrays_cot_eq() }.into()
+    }
+    /// Not equal: x != y
+    pub fn cot_ne() -> i32 {
+        unsafe { idalib_hexrays_cot_ne() }.into()
+    }
+    /// Signed greater or equal: x >= y
+    pub fn cot_sge() -> i32 {
+        unsafe { idalib_hexrays_cot_sge() }.into()
+    }
+    /// Unsigned greater or equal: x >= y
+    pub fn cot_uge() -> i32 {
+        unsafe { idalib_hexrays_cot_uge() }.into()
+    }
+    /// Signed less or equal: x <= y
+    pub fn cot_sle() -> i32 {
+        unsafe { idalib_hexrays_cot_sle() }.into()
+    }
+    /// Unsigned less or equal: x <= y
+    pub fn cot_ule() -> i32 {
+        unsafe { idalib_hexrays_cot_ule() }.into()
+    }
+    /// Signed greater than: x > y
+    pub fn cot_sgt() -> i32 {
+        unsafe { idalib_hexrays_cot_sgt() }.into()
+    }
+    /// Unsigned greater than: x > y
+    pub fn cot_ugt() -> i32 {
+        unsafe { idalib_hexrays_cot_ugt() }.into()
+    }
+    /// Signed less than: x < y
+    pub fn cot_slt() -> i32 {
+        unsafe { idalib_hexrays_cot_slt() }.into()
+    }
+    /// Unsigned less than: x < y
+    pub fn cot_ult() -> i32 {
+        unsafe { idalib_hexrays_cot_ult() }.into()
+    }
+    /// Signed shift right: x >> y
+    pub fn cot_sshr() -> i32 {
+        unsafe { idalib_hexrays_cot_sshr() }.into()
+    }
+    /// Unsigned shift right: x >> y
+    pub fn cot_ushr() -> i32 {
+        unsafe { idalib_hexrays_cot_ushr() }.into()
+    }
+    /// Shift left: x << y
+    pub fn cot_shl() -> i32 {
+        unsafe { idalib_hexrays_cot_shl() }.into()
+    }
+    /// Addition: x + y
+    pub fn cot_add() -> i32 {
+        unsafe { idalib_hexrays_cot_add() }.into()
+    }
+    /// Subtraction: x - y
+    pub fn cot_sub() -> i32 {
+        unsafe { idalib_hexrays_cot_sub() }.into()
+    }
+    /// Multiplication: x * y
+    pub fn cot_mul() -> i32 {
+        unsafe { idalib_hexrays_cot_mul() }.into()
+    }
+    /// Signed division: x / y
+    pub fn cot_sdiv() -> i32 {
+        unsafe { idalib_hexrays_cot_sdiv() }.into()
+    }
+    /// Unsigned division: x / y
+    pub fn cot_udiv() -> i32 {
+        unsafe { idalib_hexrays_cot_udiv() }.into()
+    }
+    /// Signed modulo: x % y
+    pub fn cot_smod() -> i32 {
+        unsafe { idalib_hexrays_cot_smod() }.into()
+    }
+    /// Unsigned modulo: x % y
+    pub fn cot_umod() -> i32 {
+        unsafe { idalib_hexrays_cot_umod() }.into()
+    }
+    /// Floating point addition
+    pub fn cot_fadd() -> i32 {
+        unsafe { idalib_hexrays_cot_fadd() }.into()
+    }
+    /// Floating point subtraction
+    pub fn cot_fsub() -> i32 {
+        unsafe { idalib_hexrays_cot_fsub() }.into()
+    }
+    /// Floating point multiplication
+    pub fn cot_fmul() -> i32 {
+        unsafe { idalib_hexrays_cot_fmul() }.into()
+    }
+    /// Floating point division
+    pub fn cot_fdiv() -> i32 {
+        unsafe { idalib_hexrays_cot_fdiv() }.into()
+    }
+    /// Floating point negation
+    pub fn cot_fneg() -> i32 {
+        unsafe { idalib_hexrays_cot_fneg() }.into()
+    }
+    /// Integer negation: -x
+    pub fn cot_neg() -> i32 {
+        unsafe { idalib_hexrays_cot_neg() }.into()
+    }
+    /// Type cast: (type)x
+    pub fn cot_cast() -> i32 {
+        unsafe { idalib_hexrays_cot_cast() }.into()
+    }
+    /// Logical not: !x
+    pub fn cot_lnot() -> i32 {
+        unsafe { idalib_hexrays_cot_lnot() }.into()
+    }
+    /// Bitwise not: ~x
+    pub fn cot_bnot() -> i32 {
+        unsafe { idalib_hexrays_cot_bnot() }.into()
+    }
+    /// Pointer dereference: *x
+    pub fn cot_ptr() -> i32 {
+        unsafe { idalib_hexrays_cot_ptr() }.into()
+    }
+    /// Address of: &x
+    pub fn cot_ref() -> i32 {
+        unsafe { idalib_hexrays_cot_ref() }.into()
+    }
+    /// Post-increment: x++
+    pub fn cot_postinc() -> i32 {
+        unsafe { idalib_hexrays_cot_postinc() }.into()
+    }
+    /// Post-decrement: x--
+    pub fn cot_postdec() -> i32 {
+        unsafe { idalib_hexrays_cot_postdec() }.into()
+    }
+    /// Pre-increment: ++x
+    pub fn cot_preinc() -> i32 {
+        unsafe { idalib_hexrays_cot_preinc() }.into()
+    }
+    /// Pre-decrement: --x
+    pub fn cot_predec() -> i32 {
+        unsafe { idalib_hexrays_cot_predec() }.into()
+    }
+    /// Function call: f(args)
+    pub fn cot_call() -> i32 {
+        unsafe { idalib_hexrays_cot_call() }.into()
+    }
+    /// Array indexing: `x[y]`
+    pub fn cot_idx() -> i32 {
+        unsafe { idalib_hexrays_cot_idx() }.into()
+    }
+    /// Member reference: x.m
+    pub fn cot_memref() -> i32 {
+        unsafe { idalib_hexrays_cot_memref() }.into()
+    }
+    /// Member pointer: x->m
+    pub fn cot_memptr() -> i32 {
+        unsafe { idalib_hexrays_cot_memptr() }.into()
+    }
+    /// Numeric constant
+    pub fn cot_num() -> i32 {
+        unsafe { idalib_hexrays_cot_num() }.into()
+    }
+    /// Floating point constant
+    pub fn cot_fnum() -> i32 {
+        unsafe { idalib_hexrays_cot_fnum() }.into()
+    }
+    /// String constant
+    pub fn cot_str() -> i32 {
+        unsafe { idalib_hexrays_cot_str() }.into()
+    }
+    /// Object (global variable)
+    pub fn cot_obj() -> i32 {
+        unsafe { idalib_hexrays_cot_obj() }.into()
+    }
+    /// Local variable
+    pub fn cot_var() -> i32 {
+        unsafe { idalib_hexrays_cot_var() }.into()
+    }
+    /// Embedded statement in expression
+    pub fn cot_insn() -> i32 {
+        unsafe { idalib_hexrays_cot_insn() }.into()
+    }
+    /// sizeof(type)
+    pub fn cot_sizeof() -> i32 {
+        unsafe { idalib_hexrays_cot_sizeof() }.into()
+    }
+    /// Helper function (arbitrary name)
+    pub fn cot_helper() -> i32 {
+        unsafe { idalib_hexrays_cot_helper() }.into()
+    }
+    /// Type name (in sizeof, etc.)
+    pub fn cot_type() -> i32 {
+        unsafe { idalib_hexrays_cot_type() }.into()
+    }
+    /// Last expression type
+    pub fn cot_last() -> i32 {
+        unsafe { idalib_hexrays_cot_last() }.into()
+    }
+
+    // Statement types (cit_*)
+    /// Empty statement
+    pub fn cit_empty() -> i32 {
+        unsafe { idalib_hexrays_cit_empty() }.into()
+    }
+    /// Block statement: { ... }
+    pub fn cit_block() -> i32 {
+        unsafe { idalib_hexrays_cit_block() }.into()
+    }
+    /// Expression statement: expr;
+    pub fn cit_expr() -> i32 {
+        unsafe { idalib_hexrays_cit_expr() }.into()
+    }
+    /// If statement
+    pub fn cit_if() -> i32 {
+        unsafe { idalib_hexrays_cit_if() }.into()
+    }
+    /// For loop
+    pub fn cit_for() -> i32 {
+        unsafe { idalib_hexrays_cit_for() }.into()
+    }
+    /// While loop
+    pub fn cit_while() -> i32 {
+        unsafe { idalib_hexrays_cit_while() }.into()
+    }
+    /// Do-while loop
+    pub fn cit_do() -> i32 {
+        unsafe { idalib_hexrays_cit_do() }.into()
+    }
+    /// Switch statement
+    pub fn cit_switch() -> i32 {
+        unsafe { idalib_hexrays_cit_switch() }.into()
+    }
+    /// Return statement
+    pub fn cit_return() -> i32 {
+        unsafe { idalib_hexrays_cit_return() }.into()
+    }
+    /// Goto statement
+    pub fn cit_goto() -> i32 {
+        unsafe { idalib_hexrays_cit_goto() }.into()
+    }
+    /// Inline assembly
+    pub fn cit_asm() -> i32 {
+        unsafe { idalib_hexrays_cit_asm() }.into()
+    }
+    /// Break statement
+    pub fn cit_break() -> i32 {
+        unsafe { idalib_hexrays_cit_break() }.into()
+    }
+    /// Continue statement
+    pub fn cit_continue() -> i32 {
+        unsafe { idalib_hexrays_cit_continue() }.into()
+    }
+    /// Throw statement
+    pub fn cit_throw() -> i32 {
+        unsafe { idalib_hexrays_cit_throw() }.into()
+    }
+    /// Try statement
+    pub fn cit_try() -> i32 {
+        unsafe { idalib_hexrays_cit_try() }.into()
+    }
+}
+
+/// Decompilation flags.
+pub mod decomp_flags {
+    //! Flags for controlling decompilation behavior.
+
+    use super::*;
+
+    /// Don't wait for decompilation to complete (return immediately).
+    pub fn no_wait() -> i32 {
+        unsafe { idalib_hexrays_decomp_no_wait() }.into()
+    }
+    /// Don't use/update the decompilation cache.
+    pub fn no_cache() -> i32 {
+        unsafe { idalib_hexrays_decomp_no_cache() }.into()
+    }
+    /// Don't use stack frame information.
+    pub fn no_frame() -> i32 {
+        unsafe { idalib_hexrays_decomp_no_frame() }.into()
+    }
+    /// Collect warnings during decompilation.
+    pub fn warnings() -> i32 {
+        unsafe { idalib_hexrays_decomp_warnings() }.into()
+    }
+    /// Decompile all basic blocks (not just reachable ones).
+    pub fn all_blocks() -> i32 {
+        unsafe { idalib_hexrays_decomp_all_blks() }.into()
+    }
+}
+
+// ============================================================================
+// Operator helper functions
+// ============================================================================
+
+/// Get the negated form of a relational operator.
+///
+/// For example, `==` becomes `!=`, `<` becomes `>=`.
+pub fn negated_relation(op: i32) -> i32 {
+    unsafe { idalib_hexrays_negated_relation(c_int(op)) }.into()
+}
+
+/// Get the swapped form of a relational operator.
+///
+/// For example, `<` becomes `>`, `<=` becomes `>=`.
+pub fn swapped_relation(op: i32) -> i32 {
+    unsafe { idalib_hexrays_swapped_relation(c_int(op)) }.into()
+}
+
+/// Check if an operator is unary (has one operand).
+pub fn is_unary_op(op: i32) -> bool {
+    unsafe { idalib_hexrays_is_unary_op(c_int(op)) }
+}
+
+/// Check if an operator is binary (has two operands).
+pub fn is_binary_op(op: i32) -> bool {
+    unsafe { idalib_hexrays_is_binary_op(c_int(op)) }
+}
+
+/// Check if an operator is relational (comparison).
+pub fn is_relational_op(op: i32) -> bool {
+    unsafe { idalib_hexrays_is_relational_op(c_int(op)) }
+}
+
+/// Check if an operator is an assignment.
+pub fn is_assignment_op(op: i32) -> bool {
+    unsafe { idalib_hexrays_is_assignment_op(c_int(op)) }
+}
+
+/// Check if an operator is commutative (order doesn't matter).
+pub fn is_commutative_op(op: i32) -> bool {
+    unsafe { idalib_hexrays_is_commutative_op(c_int(op)) }
+}
+
+/// Check if an operator produces an lvalue.
+pub fn is_lvalue_op(op: i32) -> bool {
+    unsafe { idalib_hexrays_is_lvalue_op(c_int(op)) }
+}
+
+/// Check if an operator represents a loop.
+pub fn is_loop_op(op: i32) -> bool {
+    unsafe { idalib_hexrays_is_loop_op(c_int(op)) }
+}
+
+/// Get the name of a C-tree type.
+pub fn ctype_name(op: i32) -> String {
+    unsafe { idalib_hexrays_ctype_name(c_int(op)) }
+}
+
+// ============================================================================
+// Cache management functions
+// ============================================================================
+
+/// Mark a cached decompilation result as dirty.
+///
+/// This forces redecompilation on the next request.
+/// If `close_views` is true, also close any pseudocode views.
+pub fn mark_cfunc_dirty(ea: Address, close_views: bool) -> bool {
+    unsafe { idalib_hexrays_mark_cfunc_dirty(ea, close_views) }
+}
+
+/// Clear all cached decompilation results.
+pub fn clear_cached_cfuncs() {
+    unsafe { idalib_hexrays_clear_cached_cfuncs() }
+}
+
+/// Check if a function has a cached decompilation result.
+pub fn has_cached_cfunc(ea: Address) -> bool {
+    unsafe { idalib_hexrays_has_cached_cfunc(ea) }
+}
+
+// ============================================================================
+// CFunction - Decompiled function
+// ============================================================================
+
+/// A decompiled function.
+///
+/// This is the main entry point for working with decompiled code. It contains
+/// the C-tree AST, local variables, and various metadata about the function.
+///
+/// # Example
+///
+/// ```rust,ignore
+/// if let Ok(cfunc) = idb.decompile(&func) {
+///     // Get pseudocode
+///     println!("{}", cfunc.pseudocode());
+///     
+///     // Get function entry address
+///     println!("Entry: 0x{:x}", cfunc.entry_ea());
+///     
+///     // Iterate over local variables
+///     for lvar in cfunc.lvars() {
+///         println!("  {}: {}", lvar.name(), lvar.type_str());
+///     }
+///     
+///     // Access the function body
+///     let body = cfunc.body();
+///     println!("Body has {} statements", body.len());
+/// }
+/// ```
 pub struct CFunction<'a> {
     ptr: *mut cfunc_t,
     _obj: cxx::UniquePtr<cfuncptr_t>,
     _marker: PhantomData<&'a IDB>,
 }
 
+impl<'a> CFunction<'a> {
+    pub(crate) fn new(obj: cxx::UniquePtr<cfuncptr_t>) -> Option<Self> {
+        let ptr = unsafe { idalib_hexrays_cfuncptr_inner(obj.as_ref().expect("valid pointer")) };
+
+        if ptr.is_null() {
+            return None;
+        }
+
+        Some(Self {
+            ptr,
+            _obj: obj,
+            _marker: PhantomData,
+        })
+    }
+
+    fn as_cfunc(&self) -> &cfunc_t {
+        unsafe { self.ptr.as_ref().expect("valid pointer") }
+    }
+
+    /// Get the function's pseudocode as a string.
+    ///
+    /// This returns the complete decompiled C code for the function.
+    pub fn pseudocode(&self) -> String {
+        unsafe { idalib_hexrays_cfunc_pseudocode(self.ptr) }
+    }
+
+    /// Get the function's entry address.
+    pub fn entry_ea(&self) -> Address {
+        unsafe { idalib_hexrays_cfunc_entry_ea(self.ptr) }
+    }
+
+    /// Get the function's maturity level.
+    ///
+    /// Higher values indicate more complete decompilation.
+    pub fn maturity(&self) -> i32 {
+        unsafe { idalib_hexrays_cfunc_maturity(self.ptr) }.into()
+    }
+
+    /// Get the number of header lines (declaration area).
+    pub fn header_lines(&self) -> i32 {
+        unsafe { idalib_hexrays_cfunc_hdrlines(self.ptr) }.into()
+    }
+
+    /// Get the function declaration as a string.
+    pub fn declaration(&self) -> String {
+        unsafe { idalib_hexrays_cfunc_print_dcl(self.ptr) }
+    }
+
+    /// Get the function type as a string.
+    pub fn type_str(&self) -> String {
+        unsafe { idalib_hexrays_cfunc_type_str(self.ptr) }
+    }
+
+    /// Get the stack offset delta.
+    pub fn stkoff_delta(&self) -> i64 {
+        unsafe { idalib_hexrays_cfunc_stkoff_delta(self.ptr) }
+    }
+
+    /// Get the function body as a block.
+    pub fn body(&self) -> CBlock<'_> {
+        let cf = self.as_cfunc();
+        let ptr = unsafe { cf.body.__bindgen_anon_1.cblock };
+
+        CBlock {
+            ptr,
+            _marker: PhantomData,
+        }
+    }
+
+    // --- Local variables ---
+
+    /// Get the number of local variables.
+    pub fn lvars_count(&self) -> usize {
+        unsafe { idalib_hexrays_cfunc_lvars_count(self.ptr) }
+    }
+
+    /// Get an iterator over local variables.
+    pub fn lvars(&self) -> LocalVarIter<'_> {
+        LocalVarIter {
+            it: unsafe { idalib_hexrays_cfunc_lvars_iter(self.ptr) },
+            _marker: PhantomData,
+        }
+    }
+
+    // --- Arguments ---
+
+    /// Get the number of function arguments.
+    pub fn args_count(&self) -> usize {
+        unsafe { idalib_hexrays_cfunc_argidx_count(self.ptr) }
+    }
+
+    /// Get the local variable index for argument at position `i`.
+    pub fn arg_lvar_idx(&self, i: usize) -> Option<i32> {
+        let idx: i32 = unsafe { idalib_hexrays_cfunc_argidx_at(self.ptr, i) }.into();
+        if idx >= 0 { Some(idx) } else { None }
+    }
+
+    // --- Warnings ---
+
+    /// Get the number of warnings generated during decompilation.
+    pub fn warnings_count(&self) -> usize {
+        unsafe { idalib_hexrays_cfunc_warnings_count(self.ptr) }
+    }
+
+    /// Get a warning message at the given index.
+    pub fn warning_at(&self, idx: usize) -> String {
+        unsafe { idalib_hexrays_cfunc_warning_at(self.ptr, idx) }
+    }
+
+    /// Get the address associated with a warning.
+    pub fn warning_ea_at(&self, idx: usize) -> Address {
+        unsafe { idalib_hexrays_cfunc_warning_ea_at(self.ptr, idx) }
+    }
+
+    /// Get all warnings as a vector of (address, message) pairs.
+    pub fn warnings(&self) -> Vec<(Address, String)> {
+        let count = self.warnings_count();
+        (0..count)
+            .map(|i| (self.warning_ea_at(i), self.warning_at(i)))
+            .collect()
+    }
+
+    // --- Labels and comments ---
+
+    /// Find a label by number in the C-tree.
+    pub fn find_label(&self, label: i32) -> Option<CItem<'_>> {
+        let ptr = unsafe { idalib_hexrays_cfunc_find_label(self.ptr, c_int(label)) };
+        if ptr.is_null() {
+            None
+        } else {
+            Some(CItem {
+                ptr,
+                _marker: PhantomData,
+            })
+        }
+    }
+
+    /// Check if there are orphan comments (comments without associated items).
+    pub fn has_orphan_cmts(&self) -> bool {
+        unsafe { idalib_hexrays_cfunc_has_orphan_cmts(self.ptr) }
+    }
+
+    /// Delete orphan comments. Returns the number deleted.
+    pub fn del_orphan_cmts(&self) -> i32 {
+        unsafe { idalib_hexrays_cfunc_del_orphan_cmts(self.ptr) }.into()
+    }
+
+    /// Remove unused labels from the C-tree.
+    pub fn remove_unused_labels(&self) {
+        unsafe { idalib_hexrays_cfunc_remove_unused_labels(self.ptr) }
+    }
+
+    // --- Save user modifications ---
+
+    /// Refresh the decompilation.
+    pub fn refresh(&self) {
+        unsafe { idalib_hexrays_cfunc_refresh(self.ptr) }
+    }
+
+    /// Save user-defined labels.
+    pub fn save_user_labels(&self) {
+        unsafe { idalib_hexrays_cfunc_save_user_labels(self.ptr) }
+    }
+
+    /// Save user-defined comments.
+    pub fn save_user_cmts(&self) {
+        unsafe { idalib_hexrays_cfunc_save_user_cmts(self.ptr) }
+    }
+
+    /// Save user-defined number formats.
+    pub fn save_user_numforms(&self) {
+        unsafe { idalib_hexrays_cfunc_save_user_numforms(self.ptr) }
+    }
+
+    /// Save user-defined item flags.
+    pub fn save_user_iflags(&self) {
+        unsafe { idalib_hexrays_cfunc_save_user_iflags(self.ptr) }
+    }
+
+    /// Save user-defined union selections.
+    pub fn save_user_unions(&self) {
+        unsafe { idalib_hexrays_cfunc_save_user_unions(self.ptr) }
+    }
+
+    // --- Microcode access ---
+
+    /// Get the microcode array for this function.
+    ///
+    /// Returns `None` if microcode is not available (e.g., after optimization).
+    pub fn mba(&self) -> Option<Mba<'_>> {
+        let ptr = unsafe { idalib_hexrays_cfunc_mba(self.ptr) };
+        if ptr.is_null() {
+            None
+        } else {
+            Some(Mba {
+                ptr,
+                _marker: PhantomData,
+            })
+        }
+    }
+}
+
+// ============================================================================
+// CBlock - Block of statements
+// ============================================================================
+
+/// A block of C statements.
+///
+/// Represents a `{ ... }` block in the decompiled code.
 pub struct CBlock<'a> {
     ptr: *mut cblock_t,
     _marker: PhantomData<&'a ()>,
 }
 
+impl<'a> CBlock<'a> {
+    /// Get an iterator over statements in the block.
+    pub fn iter(&self) -> CBlockIter<'_> {
+        CBlockIter {
+            it: unsafe { idalib_hexrays_cblock_iter(self.ptr) },
+            _marker: PhantomData,
+        }
+    }
+
+    /// Get the number of statements in the block.
+    pub fn len(&self) -> usize {
+        unsafe { idalib_hexrays_cblock_len(self.ptr) }
+    }
+
+    /// Check if the block is empty.
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+}
+
+impl<'a> IntoIterator for &'a CBlock<'a> {
+    type Item = CInsn<'a>;
+    type IntoIter = CBlockIter<'a>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
+/// Iterator over statements in a block.
 pub struct CBlockIter<'a> {
     it: cxx::UniquePtr<cblock_iter>,
     _marker: PhantomData<&'a ()>,
@@ -42,59 +1080,1074 @@ impl<'a> Iterator for CBlockIter<'a> {
     }
 }
 
+// ============================================================================
+// CItem - Base for CExpr and CInsn
+// ============================================================================
+
+/// A C-tree item (base type for expressions and statements).
+///
+/// This is the common base for [`CExpr`] and [`CInsn`].
+pub struct CItem<'a> {
+    ptr: *mut citem_t,
+    _marker: PhantomData<&'a ()>,
+}
+
+impl<'a> CItem<'a> {
+    /// Get the address of the original code that generated this item.
+    pub fn ea(&self) -> Address {
+        unsafe { idalib_hexrays_citem_ea(self.ptr) }
+    }
+
+    /// Get the operation type code.
+    ///
+    /// Compare with constants in [`ctype`] module.
+    pub fn op(&self) -> i32 {
+        unsafe { idalib_hexrays_citem_op(self.ptr) }.into()
+    }
+
+    /// Check if this item is an expression (as opposed to a statement).
+    pub fn is_expr(&self) -> bool {
+        unsafe { idalib_hexrays_citem_is_expr(self.ptr) }
+    }
+
+    /// Get the label number, or -1 if no label.
+    pub fn label_num(&self) -> i32 {
+        unsafe { idalib_hexrays_citem_label_num(self.ptr) }.into()
+    }
+
+    /// Check if this item or any child contains a specific label.
+    pub fn contains_label(&self) -> bool {
+        unsafe { idalib_hexrays_citem_contains_label(self.ptr) }
+    }
+
+    /// Print this item as a string.
+    pub fn print(&self) -> String {
+        unsafe { idalib_hexrays_citem_print(self.ptr) }
+    }
+
+    /// Get the name of the item's type code.
+    pub fn op_name(&self) -> String {
+        ctype_name(self.op())
+    }
+
+    /// Try to convert to an expression.
+    pub fn as_expr(&self) -> Option<CExpr<'a>> {
+        if self.is_expr() {
+            Some(CExpr {
+                ptr: self.ptr as *mut cexpr_t,
+                _marker: PhantomData,
+            })
+        } else {
+            None
+        }
+    }
+
+    /// Try to convert to a statement.
+    pub fn as_insn(&self) -> Option<CInsn<'a>> {
+        if !self.is_expr() {
+            Some(CInsn {
+                ptr: self.ptr as *mut cinsn_t,
+                _marker: PhantomData,
+            })
+        } else {
+            None
+        }
+    }
+}
+
+// ============================================================================
+// CInsn - C statement
+// ============================================================================
+
+/// A C statement in the decompiled code.
+///
+/// Represents statements like `if`, `while`, `for`, `return`, etc.
+///
+/// # Example
+///
+/// ```rust,ignore
+/// for insn in cfunc.body().iter() {
+///     match insn.op() {
+///         op if op == ctype::cit_if() => {
+///             if let Some(cond) = insn.if_cond() {
+///                 println!("if condition: {}", cond.print());
+///             }
+///         }
+///         op if op == ctype::cit_return() => {
+///             if let Some(expr) = insn.return_expr() {
+///                 println!("return: {}", expr.print());
+///             }
+///         }
+///         _ => {}
+///     }
+/// }
+/// ```
 pub struct CInsn<'a> {
-    #[allow(unused)]
     ptr: *mut cinsn_t,
     _marker: PhantomData<&'a ()>,
 }
 
-impl<'a> CFunction<'a> {
-    pub(crate) fn new(obj: cxx::UniquePtr<cfuncptr_t>) -> Option<Self> {
-        let ptr = unsafe { idalib_hexrays_cfuncptr_inner(obj.as_ref().expect("valid pointer")) };
+impl<'a> CInsn<'a> {
+    /// Get the address of the original code.
+    pub fn ea(&self) -> Address {
+        unsafe { idalib_hexrays_citem_ea(self.ptr as *mut citem_t) }
+    }
 
+    /// Get the statement type code.
+    pub fn op(&self) -> i32 {
+        unsafe { idalib_hexrays_citem_op(self.ptr as *mut citem_t) }.into()
+    }
+
+    /// Get the label number, or -1 if no label.
+    pub fn label_num(&self) -> i32 {
+        unsafe { idalib_hexrays_citem_label_num(self.ptr as *mut citem_t) }.into()
+    }
+
+    /// Print this statement as a string.
+    pub fn print(&self) -> String {
+        unsafe { idalib_hexrays_citem_print(self.ptr as *mut citem_t) }
+    }
+
+    /// Get the name of the statement type.
+    pub fn op_name(&self) -> String {
+        ctype_name(self.op())
+    }
+
+    /// Check if this is ordinary flow (no jumps).
+    pub fn is_ordinary_flow(&self) -> bool {
+        unsafe { idalib_hexrays_cinsn_is_ordinary_flow(self.ptr) }
+    }
+
+    /// Check if this statement contains a free break.
+    pub fn contains_free_break(&self) -> bool {
+        unsafe { idalib_hexrays_cinsn_contains_free_break(self.ptr) }
+    }
+
+    /// Check if this statement contains a free continue.
+    pub fn contains_free_continue(&self) -> bool {
+        unsafe { idalib_hexrays_cinsn_contains_free_continue(self.ptr) }
+    }
+
+    // --- Block statement ---
+
+    /// Get the block if this is a block statement.
+    pub fn cblock(&self) -> Option<CBlock<'a>> {
+        let ptr = unsafe { idalib_hexrays_cinsn_cblock(self.ptr) };
         if ptr.is_null() {
-            return None;
+            None
+        } else {
+            Some(CBlock {
+                ptr,
+                _marker: PhantomData,
+            })
         }
-
-        Some(Self {
-            ptr,
-            _obj: obj,
-            _marker: PhantomData,
-        })
     }
 
-    pub fn pseudocode(&self) -> String {
-        unsafe { idalib_hexrays_cfunc_pseudocode(self.ptr) }
+    // --- Expression statement ---
+
+    /// Get the expression if this is an expression statement.
+    pub fn cexpr(&self) -> Option<CExpr<'a>> {
+        let ptr = unsafe { idalib_hexrays_cinsn_cexpr(self.ptr) };
+        if ptr.is_null() {
+            None
+        } else {
+            Some(CExpr {
+                ptr,
+                _marker: PhantomData,
+            })
+        }
     }
 
-    fn as_cfunc(&self) -> &cfunc_t {
-        unsafe { self.ptr.as_ref().expect("valid pointer") }
+    // --- If statement ---
+
+    /// Get the condition of an if statement.
+    pub fn if_cond(&self) -> Option<CExpr<'a>> {
+        let ptr = unsafe { idalib_hexrays_cinsn_if_cond(self.ptr) };
+        if ptr.is_null() {
+            None
+        } else {
+            Some(CExpr {
+                ptr,
+                _marker: PhantomData,
+            })
+        }
     }
 
-    pub fn body(&self) -> CBlock<'_> {
-        let cf = self.as_cfunc();
-        let ptr = unsafe { cf.body.__bindgen_anon_1.cblock };
+    /// Get the 'then' branch of an if statement.
+    pub fn if_then(&self) -> Option<CInsn<'a>> {
+        let ptr = unsafe { idalib_hexrays_cinsn_if_then(self.ptr) };
+        if ptr.is_null() {
+            None
+        } else {
+            Some(CInsn {
+                ptr,
+                _marker: PhantomData,
+            })
+        }
+    }
 
-        CBlock {
-            ptr,
+    /// Get the 'else' branch of an if statement.
+    pub fn if_else(&self) -> Option<CInsn<'a>> {
+        let ptr = unsafe { idalib_hexrays_cinsn_if_else(self.ptr) };
+        if ptr.is_null() {
+            None
+        } else {
+            Some(CInsn {
+                ptr,
+                _marker: PhantomData,
+            })
+        }
+    }
+
+    // --- For loop ---
+
+    /// Get the initialization of a for loop.
+    pub fn for_init(&self) -> Option<CExpr<'a>> {
+        let ptr = unsafe { idalib_hexrays_cinsn_for_init(self.ptr) };
+        if ptr.is_null() {
+            None
+        } else {
+            Some(CExpr {
+                ptr,
+                _marker: PhantomData,
+            })
+        }
+    }
+
+    /// Get the condition of a for loop.
+    pub fn for_cond(&self) -> Option<CExpr<'a>> {
+        let ptr = unsafe { idalib_hexrays_cinsn_for_cond(self.ptr) };
+        if ptr.is_null() {
+            None
+        } else {
+            Some(CExpr {
+                ptr,
+                _marker: PhantomData,
+            })
+        }
+    }
+
+    /// Get the step expression of a for loop.
+    pub fn for_step(&self) -> Option<CExpr<'a>> {
+        let ptr = unsafe { idalib_hexrays_cinsn_for_step(self.ptr) };
+        if ptr.is_null() {
+            None
+        } else {
+            Some(CExpr {
+                ptr,
+                _marker: PhantomData,
+            })
+        }
+    }
+
+    /// Get the body of a for loop.
+    pub fn for_body(&self) -> Option<CInsn<'a>> {
+        let ptr = unsafe { idalib_hexrays_cinsn_for_body(self.ptr) };
+        if ptr.is_null() {
+            None
+        } else {
+            Some(CInsn {
+                ptr,
+                _marker: PhantomData,
+            })
+        }
+    }
+
+    // --- While loop ---
+
+    /// Get the condition of a while loop.
+    pub fn while_cond(&self) -> Option<CExpr<'a>> {
+        let ptr = unsafe { idalib_hexrays_cinsn_while_cond(self.ptr) };
+        if ptr.is_null() {
+            None
+        } else {
+            Some(CExpr {
+                ptr,
+                _marker: PhantomData,
+            })
+        }
+    }
+
+    /// Get the body of a while loop.
+    pub fn while_body(&self) -> Option<CInsn<'a>> {
+        let ptr = unsafe { idalib_hexrays_cinsn_while_body(self.ptr) };
+        if ptr.is_null() {
+            None
+        } else {
+            Some(CInsn {
+                ptr,
+                _marker: PhantomData,
+            })
+        }
+    }
+
+    // --- Do-while loop ---
+
+    /// Get the body of a do-while loop.
+    pub fn do_body(&self) -> Option<CInsn<'a>> {
+        let ptr = unsafe { idalib_hexrays_cinsn_do_body(self.ptr) };
+        if ptr.is_null() {
+            None
+        } else {
+            Some(CInsn {
+                ptr,
+                _marker: PhantomData,
+            })
+        }
+    }
+
+    /// Get the condition of a do-while loop.
+    pub fn do_cond(&self) -> Option<CExpr<'a>> {
+        let ptr = unsafe { idalib_hexrays_cinsn_do_cond(self.ptr) };
+        if ptr.is_null() {
+            None
+        } else {
+            Some(CExpr {
+                ptr,
+                _marker: PhantomData,
+            })
+        }
+    }
+
+    // --- Switch statement ---
+
+    /// Get the expression of a switch statement.
+    pub fn switch_expr(&self) -> Option<CExpr<'a>> {
+        let ptr = unsafe { idalib_hexrays_cinsn_switch_expr(self.ptr) };
+        if ptr.is_null() {
+            None
+        } else {
+            Some(CExpr {
+                ptr,
+                _marker: PhantomData,
+            })
+        }
+    }
+
+    /// Get the number of cases in a switch statement.
+    pub fn switch_cases_count(&self) -> usize {
+        unsafe { idalib_hexrays_cinsn_switch_cases_count(self.ptr) }
+    }
+
+    // --- Return statement ---
+
+    /// Get the expression of a return statement.
+    pub fn return_expr(&self) -> Option<CExpr<'a>> {
+        let ptr = unsafe { idalib_hexrays_cinsn_return_expr(self.ptr) };
+        if ptr.is_null() {
+            None
+        } else {
+            Some(CExpr {
+                ptr,
+                _marker: PhantomData,
+            })
+        }
+    }
+
+    // --- Goto statement ---
+
+    /// Get the target label of a goto statement.
+    pub fn goto_label(&self) -> i32 {
+        unsafe { idalib_hexrays_cinsn_goto_label(self.ptr) }.into()
+    }
+}
+
+// ============================================================================
+// CExpr - C expression
+// ============================================================================
+
+/// A C expression in the decompiled code.
+///
+/// Represents expressions like arithmetic operations, function calls,
+/// variable references, etc.
+///
+/// # Example
+///
+/// ```rust,ignore
+/// fn analyze_expr(expr: &CExpr) {
+///     let op = expr.op();
+///     
+///     if op == ctype::cot_call() {
+///         // Function call
+///         if let Some(args) = expr.call_args() {
+///             println!("Call with {} arguments", args.len());
+///         }
+///     } else if op == ctype::cot_var() {
+///         // Local variable reference
+///         println!("Variable index: {}", expr.var_idx());
+///     } else if op == ctype::cot_num() {
+///         // Numeric constant
+///         println!("Number: {}", expr.numval());
+///     }
+/// }
+/// ```
+pub struct CExpr<'a> {
+    ptr: *mut cexpr_t,
+    _marker: PhantomData<&'a ()>,
+}
+
+impl<'a> CExpr<'a> {
+    /// Get the address of the original code.
+    pub fn ea(&self) -> Address {
+        unsafe { idalib_hexrays_citem_ea(self.ptr as *mut citem_t) }
+    }
+
+    /// Get the expression type code.
+    pub fn op(&self) -> i32 {
+        unsafe { idalib_hexrays_citem_op(self.ptr as *mut citem_t) }.into()
+    }
+
+    /// Get the label number, or -1 if no label.
+    pub fn label_num(&self) -> i32 {
+        unsafe { idalib_hexrays_citem_label_num(self.ptr as *mut citem_t) }.into()
+    }
+
+    /// Print this expression as a string.
+    pub fn print(&self) -> String {
+        unsafe { idalib_hexrays_citem_print(self.ptr as *mut citem_t) }
+    }
+
+    /// Get the name of the expression type.
+    pub fn op_name(&self) -> String {
+        ctype_name(self.op())
+    }
+
+    // --- Type information ---
+
+    /// Get the result type as a string.
+    pub fn type_str(&self) -> String {
+        unsafe { idalib_hexrays_cexpr_type_str(self.ptr) }
+    }
+
+    /// Get the size of the result type in bytes.
+    pub fn type_size(&self) -> usize {
+        unsafe { idalib_hexrays_cexpr_type_size(self.ptr) }
+    }
+
+    /// Check if the result type is a pointer.
+    pub fn type_is_ptr(&self) -> bool {
+        unsafe { idalib_hexrays_cexpr_type_is_ptr(self.ptr) }
+    }
+
+    /// Check if the result type is an array.
+    pub fn type_is_array(&self) -> bool {
+        unsafe { idalib_hexrays_cexpr_type_is_array(self.ptr) }
+    }
+
+    /// Check if the result type is a struct.
+    pub fn type_is_struct(&self) -> bool {
+        unsafe { idalib_hexrays_cexpr_type_is_struct(self.ptr) }
+    }
+
+    /// Check if the result type is a union.
+    pub fn type_is_union(&self) -> bool {
+        unsafe { idalib_hexrays_cexpr_type_is_union(self.ptr) }
+    }
+
+    /// Check if the result type is a floating point type.
+    pub fn type_is_float(&self) -> bool {
+        unsafe { idalib_hexrays_cexpr_type_is_float(self.ptr) }
+    }
+
+    /// Check if the result type is signed.
+    pub fn type_is_signed(&self) -> bool {
+        unsafe { idalib_hexrays_cexpr_type_is_signed(self.ptr) }
+    }
+
+    /// Check if the result type is unsigned.
+    pub fn type_is_unsigned(&self) -> bool {
+        unsafe { idalib_hexrays_cexpr_type_is_unsigned(self.ptr) }
+    }
+
+    // --- Operands ---
+
+    /// Get the first operand (x) of a binary/unary expression.
+    pub fn x(&self) -> Option<CExpr<'a>> {
+        let ptr = unsafe { idalib_hexrays_cexpr_x(self.ptr) };
+        if ptr.is_null() {
+            None
+        } else {
+            Some(CExpr {
+                ptr,
+                _marker: PhantomData,
+            })
+        }
+    }
+
+    /// Get the second operand (y) of a binary expression.
+    pub fn y(&self) -> Option<CExpr<'a>> {
+        let ptr = unsafe { idalib_hexrays_cexpr_y(self.ptr) };
+        if ptr.is_null() {
+            None
+        } else {
+            Some(CExpr {
+                ptr,
+                _marker: PhantomData,
+            })
+        }
+    }
+
+    /// Get the third operand (z) of a ternary expression.
+    pub fn z(&self) -> Option<CExpr<'a>> {
+        let ptr = unsafe { idalib_hexrays_cexpr_z(self.ptr) };
+        if ptr.is_null() {
+            None
+        } else {
+            Some(CExpr {
+                ptr,
+                _marker: PhantomData,
+            })
+        }
+    }
+
+    // --- Specific expression data ---
+
+    /// Get the numeric value (for cot_num).
+    pub fn numval(&self) -> u64 {
+        unsafe { idalib_hexrays_cexpr_numval(self.ptr) }
+    }
+
+    /// Get the object address (for cot_obj).
+    pub fn obj_ea(&self) -> Address {
+        unsafe { idalib_hexrays_cexpr_obj_ea(self.ptr) }
+    }
+
+    /// Get the variable index (for cot_var).
+    pub fn var_idx(&self) -> i32 {
+        unsafe { idalib_hexrays_cexpr_var_idx(self.ptr) }.into()
+    }
+
+    /// Get the string value (for cot_str).
+    pub fn string(&self) -> String {
+        unsafe { idalib_hexrays_cexpr_str(self.ptr) }
+    }
+
+    /// Get the helper name (for cot_helper).
+    pub fn helper(&self) -> String {
+        unsafe { idalib_hexrays_cexpr_helper(self.ptr) }
+    }
+
+    /// Get the member offset (for cot_memref/cot_memptr).
+    pub fn member_offset(&self) -> u32 {
+        unsafe { idalib_hexrays_cexpr_member_offset(self.ptr) }
+    }
+
+    /// Get the pointer size (for cot_ptr/cot_memptr).
+    pub fn ptrsize(&self) -> i32 {
+        unsafe { idalib_hexrays_cexpr_ptrsize(self.ptr) }.into()
+    }
+
+    /// Get the expression flags.
+    pub fn exflags(&self) -> u32 {
+        unsafe { idalib_hexrays_cexpr_exflags(self.ptr) }
+    }
+
+    // --- Expression type checks ---
+
+    /// Check if this is a function call.
+    pub fn is_call(&self) -> bool {
+        unsafe { idalib_hexrays_cexpr_is_call(self.ptr) }
+    }
+
+    /// Check if this is a C string constant.
+    pub fn is_cstr(&self) -> bool {
+        unsafe { idalib_hexrays_cexpr_is_cstr(self.ptr) }
+    }
+
+    /// Check if this is a floating point operation.
+    pub fn is_fpop(&self) -> bool {
+        unsafe { idalib_hexrays_cexpr_is_fpop(self.ptr) }
+    }
+
+    /// Check if this expression has a "nice" form.
+    pub fn is_nice(&self) -> bool {
+        unsafe { idalib_hexrays_cexpr_is_nice(self.ptr) }
+    }
+
+    /// Check if this is an undefined value.
+    pub fn is_undef_val(&self) -> bool {
+        unsafe { idalib_hexrays_cexpr_is_undef_val(self.ptr) }
+    }
+
+    // --- Call arguments ---
+
+    /// Get the call arguments (for cot_call).
+    pub fn call_args(&self) -> Option<CArgList<'a>> {
+        let ptr = unsafe { idalib_hexrays_cexpr_call_args(self.ptr) };
+        if ptr.is_null() {
+            None
+        } else {
+            Some(CArgList {
+                ptr,
+                _marker: PhantomData,
+            })
+        }
+    }
+}
+
+// ============================================================================
+// CArgList - Function call arguments
+// ============================================================================
+
+/// A list of function call arguments.
+pub struct CArgList<'a> {
+    ptr: *mut carglist_t,
+    _marker: PhantomData<&'a ()>,
+}
+
+impl<'a> CArgList<'a> {
+    /// Get the number of arguments.
+    pub fn len(&self) -> usize {
+        unsafe { idalib_hexrays_carglist_count(self.ptr) }
+    }
+
+    /// Check if the argument list is empty.
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    /// Get an argument by index.
+    pub fn at(&self, idx: usize) -> Option<CArg<'a>> {
+        let ptr = unsafe { idalib_hexrays_carglist_at(self.ptr, idx) };
+        if ptr.is_null() {
+            None
+        } else {
+            Some(CArg {
+                ptr,
+                _marker: PhantomData,
+            })
+        }
+    }
+
+    /// Get an iterator over arguments.
+    pub fn iter(&self) -> CArgListIter<'_> {
+        CArgListIter {
+            it: unsafe { idalib_hexrays_carglist_iter(self.ptr) },
             _marker: PhantomData,
         }
     }
 }
 
-impl<'a> CBlock<'a> {
-    pub fn iter(&self) -> CBlockIter<'_> {
-        CBlockIter {
-            it: unsafe { idalib_hexrays_cblock_iter(self.ptr) },
+impl<'a> IntoIterator for &'a CArgList<'a> {
+    type Item = CArg<'a>;
+    type IntoIter = CArgListIter<'a>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
+/// Iterator over function call arguments.
+pub struct CArgListIter<'a> {
+    it: cxx::UniquePtr<carglist_iter>,
+    _marker: PhantomData<&'a ()>,
+}
+
+impl<'a> Iterator for CArgListIter<'a> {
+    type Item = CArg<'a>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let ptr = unsafe { idalib_hexrays_carglist_iter_next(self.it.pin_mut()) };
+        if ptr.is_null() {
+            None
+        } else {
+            Some(CArg {
+                ptr,
+                _marker: PhantomData,
+            })
+        }
+    }
+}
+
+/// A function call argument.
+///
+/// This is an expression that also has information about whether
+/// it's a vararg and its formal type.
+pub struct CArg<'a> {
+    ptr: *mut carg_t,
+    _marker: PhantomData<&'a ()>,
+}
+
+impl<'a> CArg<'a> {
+    /// Get this argument as an expression.
+    ///
+    /// Note: `carg_t` extends `cexpr_t`, so this is a safe upcast.
+    pub fn as_expr(&self) -> CExpr<'a> {
+        CExpr {
+            ptr: self.ptr as *mut cexpr_t,
             _marker: PhantomData,
         }
     }
 
-    pub fn len(&self) -> usize {
-        unsafe { idalib_hexrays_cblock_len(self.ptr) }
+    /// Check if this is a vararg argument.
+    pub fn is_vararg(&self) -> bool {
+        unsafe { idalib_hexrays_carg_is_vararg(self.ptr as *const _) }
     }
 
-    pub fn is_empty(&self) -> bool {
-        self.len() == 0
+    /// Get the formal type as a string.
+    pub fn formal_type_str(&self) -> String {
+        unsafe { idalib_hexrays_carg_formal_type_str(self.ptr as *const _) }
     }
+}
+
+// ============================================================================
+// LocalVar - Local variable
+// ============================================================================
+
+/// A local variable in a decompiled function.
+///
+/// # Example
+///
+/// ```rust,ignore
+/// for lvar in cfunc.lvars() {
+///     println!("Variable: {} : {}", lvar.name(), lvar.type_str());
+///     if lvar.is_arg() {
+///         println!("  (function argument)");
+///     }
+///     if lvar.is_stk_var() {
+///         println!("  Stack offset: 0x{:x}", lvar.stkoff());
+///     }
+/// }
+/// ```
+pub struct LocalVar<'a> {
+    ptr: *mut lvar_t,
+    _marker: PhantomData<&'a ()>,
+}
+
+impl<'a> LocalVar<'a> {
+    /// Get the variable name.
+    pub fn name(&self) -> String {
+        unsafe { idalib_hexrays_lvar_name(self.ptr) }
+    }
+
+    /// Get the variable type as a string.
+    pub fn type_str(&self) -> String {
+        unsafe { idalib_hexrays_lvar_type_str(self.ptr) }
+    }
+
+    /// Get the variable comment.
+    pub fn comment(&self) -> String {
+        unsafe { idalib_hexrays_lvar_cmt(self.ptr) }
+    }
+
+    /// Get the variable width in bytes.
+    pub fn width(&self) -> i32 {
+        unsafe { idalib_hexrays_lvar_width(self.ptr) }.into()
+    }
+
+    /// Get the definition block number.
+    pub fn defblk(&self) -> i32 {
+        unsafe { idalib_hexrays_lvar_defblk(self.ptr) }.into()
+    }
+
+    /// Get the definition address.
+    pub fn defea(&self) -> Address {
+        unsafe { idalib_hexrays_lvar_defea(self.ptr) }
+    }
+
+    /// Check if this is a function argument.
+    pub fn is_arg(&self) -> bool {
+        unsafe { idalib_hexrays_lvar_is_arg(self.ptr) }
+    }
+
+    /// Check if this is a return value.
+    pub fn is_result(&self) -> bool {
+        unsafe { idalib_hexrays_lvar_is_result(self.ptr) }
+    }
+
+    /// Check if this is a stack variable.
+    pub fn is_stk_var(&self) -> bool {
+        unsafe { idalib_hexrays_lvar_is_stk_var(self.ptr) }
+    }
+
+    /// Check if this is a register variable.
+    pub fn is_reg_var(&self) -> bool {
+        unsafe { idalib_hexrays_lvar_is_reg_var(self.ptr) }
+    }
+
+    /// Check if this is a floating point variable.
+    pub fn is_floating(&self) -> bool {
+        unsafe { idalib_hexrays_lvar_is_floating(self.ptr) }
+    }
+
+    /// Check if this variable has a type.
+    pub fn is_typed(&self) -> bool {
+        unsafe { idalib_hexrays_lvar_is_typed(self.ptr) }
+    }
+
+    /// Check if this is a fake variable.
+    pub fn is_fake(&self) -> bool {
+        unsafe { idalib_hexrays_lvar_is_fake(self.ptr) }
+    }
+
+    /// Check if this variable overlaps with others.
+    pub fn is_overlapped(&self) -> bool {
+        unsafe { idalib_hexrays_lvar_is_overlapped(self.ptr) }
+    }
+
+    /// Check if this variable is used.
+    pub fn is_used(&self) -> bool {
+        unsafe { idalib_hexrays_lvar_is_used(self.ptr) }
+    }
+
+    /// Check if this variable is used by reference.
+    pub fn is_used_byref(&self) -> bool {
+        unsafe { idalib_hexrays_lvar_is_used_byref(self.ptr) }
+    }
+
+    /// Check if this is the 'this' argument.
+    pub fn is_thisarg(&self) -> bool {
+        unsafe { idalib_hexrays_lvar_is_thisarg(self.ptr) }
+    }
+
+    /// Check if this variable has a user-defined name.
+    pub fn has_user_name(&self) -> bool {
+        unsafe { idalib_hexrays_lvar_has_user_name(self.ptr) }
+    }
+
+    /// Check if this variable has a user-defined type.
+    pub fn has_user_type(&self) -> bool {
+        unsafe { idalib_hexrays_lvar_has_user_type(self.ptr) }
+    }
+
+    /// Check if this variable has a "nice" name.
+    pub fn has_nice_name(&self) -> bool {
+        unsafe { idalib_hexrays_lvar_has_nice_name(self.ptr) }
+    }
+
+    /// Get the stack offset (for stack variables).
+    pub fn stkoff(&self) -> i64 {
+        unsafe { idalib_hexrays_lvar_get_stkoff(self.ptr) }
+    }
+
+    /// Get the register number (for register variables).
+    pub fn reg(&self) -> i32 {
+        unsafe { idalib_hexrays_lvar_get_reg(self.ptr) }.into()
+    }
+}
+
+/// Iterator over local variables.
+pub struct LocalVarIter<'a> {
+    it: cxx::UniquePtr<lvars_iter>,
+    _marker: PhantomData<&'a ()>,
+}
+
+impl<'a> Iterator for LocalVarIter<'a> {
+    type Item = LocalVar<'a>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let ptr = unsafe { idalib_hexrays_lvars_iter_next(self.it.pin_mut()) };
+        if ptr.is_null() {
+            None
+        } else {
+            Some(LocalVar {
+                ptr,
+                _marker: PhantomData,
+            })
+        }
+    }
+}
+
+// ============================================================================
+// Microcode types
+// ============================================================================
+
+/// Microcode array (mba_t).
+///
+/// The microcode is an intermediate representation used by the decompiler
+/// before generating the C-tree. It consists of basic blocks containing
+/// microcode instructions.
+pub struct Mba<'a> {
+    ptr: *mut mba_t,
+    _marker: PhantomData<&'a ()>,
+}
+
+impl<'a> Mba<'a> {
+    /// Get the number of basic blocks.
+    pub fn qty(&self) -> i32 {
+        unsafe { idalib_hexrays_mba_qty(self.ptr) }.into()
+    }
+
+    /// Get the function entry address.
+    pub fn entry_ea(&self) -> Address {
+        unsafe { idalib_hexrays_mba_entry_ea(self.ptr) }
+    }
+
+    /// Get the microcode maturity level.
+    pub fn maturity(&self) -> i32 {
+        unsafe { idalib_hexrays_mba_maturity(self.ptr) }.into()
+    }
+
+    /// Get a basic block by index.
+    pub fn get_mblock(&self, idx: i32) -> Option<Mblock<'a>> {
+        let ptr = unsafe { idalib_hexrays_mba_get_mblock(self.ptr, c_int(idx)) };
+        if ptr.is_null() {
+            None
+        } else {
+            Some(Mblock {
+                ptr,
+                _marker: PhantomData,
+            })
+        }
+    }
+
+    /// Iterate over all basic blocks.
+    pub fn blocks(&self) -> impl Iterator<Item = Mblock<'a>> + '_ {
+        (0..self.qty()).filter_map(|i| self.get_mblock(i))
+    }
+}
+
+/// A microcode basic block (mblock_t).
+pub struct Mblock<'a> {
+    ptr: *mut mblock_t,
+    _marker: PhantomData<&'a ()>,
+}
+
+impl<'a> Mblock<'a> {
+    /// Get the block serial number.
+    pub fn serial(&self) -> i32 {
+        unsafe { idalib_hexrays_mblock_serial(self.ptr) }.into()
+    }
+
+    /// Get the start address of this block.
+    pub fn start(&self) -> Address {
+        unsafe { idalib_hexrays_mblock_start(self.ptr) }
+    }
+
+    /// Get the end address of this block.
+    pub fn end(&self) -> Address {
+        unsafe { idalib_hexrays_mblock_end(self.ptr) }
+    }
+
+    /// Get the block type.
+    pub fn block_type(&self) -> i32 {
+        unsafe { idalib_hexrays_mblock_type(self.ptr) }.into()
+    }
+
+    /// Get the number of predecessors.
+    pub fn npred(&self) -> i32 {
+        unsafe { idalib_hexrays_mblock_npred(self.ptr) }.into()
+    }
+
+    /// Get the number of successors.
+    pub fn nsucc(&self) -> i32 {
+        unsafe { idalib_hexrays_mblock_nsucc(self.ptr) }.into()
+    }
+
+    /// Get a predecessor block number.
+    pub fn pred(&self, idx: i32) -> i32 {
+        unsafe { idalib_hexrays_mblock_pred(self.ptr, c_int(idx)) }.into()
+    }
+
+    /// Get a successor block number.
+    pub fn succ(&self, idx: i32) -> i32 {
+        unsafe { idalib_hexrays_mblock_succ(self.ptr, c_int(idx)) }.into()
+    }
+
+    /// Get the first instruction in this block.
+    pub fn head(&self) -> Option<Minsn<'a>> {
+        let ptr = unsafe { idalib_hexrays_mblock_head(self.ptr) };
+        if ptr.is_null() {
+            None
+        } else {
+            Some(Minsn {
+                ptr,
+                _marker: PhantomData,
+            })
+        }
+    }
+
+    /// Get the last instruction in this block.
+    pub fn tail(&self) -> Option<Minsn<'a>> {
+        let ptr = unsafe { idalib_hexrays_mblock_tail(self.ptr) };
+        if ptr.is_null() {
+            None
+        } else {
+            Some(Minsn {
+                ptr,
+                _marker: PhantomData,
+            })
+        }
+    }
+
+    /// Iterate over all instructions in this block.
+    pub fn instructions(&self) -> MblockInsnIter<'a> {
+        MblockInsnIter {
+            current: self.head(),
+        }
+    }
+}
+
+/// Iterator over instructions in a basic block.
+pub struct MblockInsnIter<'a> {
+    current: Option<Minsn<'a>>,
+}
+
+impl<'a> Iterator for MblockInsnIter<'a> {
+    type Item = Minsn<'a>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let current = self.current.take()?;
+        self.current = current.next();
+        Some(current)
+    }
+}
+
+/// A microcode instruction (minsn_t).
+pub struct Minsn<'a> {
+    ptr: *mut minsn_t,
+    _marker: PhantomData<&'a ()>,
+}
+
+impl<'a> Minsn<'a> {
+    /// Get the address of this instruction.
+    pub fn ea(&self) -> Address {
+        unsafe { idalib_hexrays_minsn_ea(self.ptr) }
+    }
+
+    /// Get the opcode of this instruction.
+    pub fn opcode(&self) -> i32 {
+        unsafe { idalib_hexrays_minsn_opcode(self.ptr) }.into()
+    }
+
+    /// Get the next instruction.
+    pub fn next(&self) -> Option<Minsn<'a>> {
+        let ptr = unsafe { idalib_hexrays_minsn_next(self.ptr) };
+        if ptr.is_null() {
+            None
+        } else {
+            Some(Minsn {
+                ptr,
+                _marker: PhantomData,
+            })
+        }
+    }
+
+    /// Get the previous instruction.
+    pub fn prev(&self) -> Option<Minsn<'a>> {
+        let ptr = unsafe { idalib_hexrays_minsn_prev(self.ptr) };
+        if ptr.is_null() {
+            None
+        } else {
+            Some(Minsn {
+                ptr,
+                _marker: PhantomData,
+            })
+        }
+    }
+
+    /// Get a string representation of this instruction.
+    pub fn dstr(&self) -> String {
+        unsafe { idalib_hexrays_minsn_dstr(self.ptr) }
+    }
+
+    /// Get the name of this instruction's opcode.
+    pub fn opcode_name(&self) -> String {
+        mcode_name(self.opcode())
+    }
+}
+
+/// Get the name of a microcode opcode.
+pub fn mcode_name(opcode: i32) -> String {
+    unsafe { idalib_hexrays_mcode_name(c_int(opcode)) }
 }

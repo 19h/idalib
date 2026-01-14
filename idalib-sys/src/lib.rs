@@ -528,10 +528,266 @@ pub mod hexrays {
     pub use super::ffi::{
         carg_t, carglist_t, cfuncptr_t, init_hexrays_plugin, term_hexrays_plugin,
     };
+
     pub use super::ffix::{
-        cblock_iter, idalib_hexrays_cblock_iter, idalib_hexrays_cblock_iter_next,
-        idalib_hexrays_cblock_len, idalib_hexrays_cfunc_pseudocode, idalib_hexrays_cfuncptr_inner,
+        carglist_iter,
+        // Iterators
+        cblock_iter,
+        idalib_hexrays_carg_formal_type_str,
+        idalib_hexrays_carg_is_vararg,
+        idalib_hexrays_carglist_at,
+        // carglist_t operations
+        idalib_hexrays_carglist_count,
+        idalib_hexrays_carglist_iter,
+        idalib_hexrays_carglist_iter_next,
+        // cinsn_t operations
+        idalib_hexrays_cblock_iter,
+        idalib_hexrays_cblock_iter_next,
+        idalib_hexrays_cblock_len,
+        idalib_hexrays_cexpr_call_args,
+        idalib_hexrays_cexpr_exflags,
+        idalib_hexrays_cexpr_helper,
+        idalib_hexrays_cexpr_is_call,
+        idalib_hexrays_cexpr_is_cstr,
+        idalib_hexrays_cexpr_is_fpop,
+        idalib_hexrays_cexpr_is_nice,
+        idalib_hexrays_cexpr_is_undef_val,
+        idalib_hexrays_cexpr_member_offset,
+        idalib_hexrays_cexpr_numval,
+        idalib_hexrays_cexpr_obj_ea,
+        idalib_hexrays_cexpr_ptrsize,
+        idalib_hexrays_cexpr_str,
+        idalib_hexrays_cexpr_type_is_array,
+        idalib_hexrays_cexpr_type_is_float,
+        idalib_hexrays_cexpr_type_is_ptr,
+        idalib_hexrays_cexpr_type_is_signed,
+        idalib_hexrays_cexpr_type_is_struct,
+        idalib_hexrays_cexpr_type_is_union,
+        idalib_hexrays_cexpr_type_is_unsigned,
+        idalib_hexrays_cexpr_type_size,
+        // cexpr_t operations
+        idalib_hexrays_cexpr_type_str,
+        idalib_hexrays_cexpr_var_idx,
+        idalib_hexrays_cexpr_x,
+        idalib_hexrays_cexpr_y,
+        idalib_hexrays_cexpr_z,
+        idalib_hexrays_cfunc_argidx_at,
+        idalib_hexrays_cfunc_argidx_count,
+        idalib_hexrays_cfunc_del_orphan_cmts,
+        idalib_hexrays_cfunc_entry_ea,
+        idalib_hexrays_cfunc_find_label,
+        idalib_hexrays_cfunc_has_orphan_cmts,
+        idalib_hexrays_cfunc_hdrlines,
+        idalib_hexrays_cfunc_lvars_count,
+        idalib_hexrays_cfunc_lvars_iter,
+        idalib_hexrays_cfunc_maturity,
+        // Microcode operations
+        idalib_hexrays_cfunc_mba,
+        idalib_hexrays_cfunc_print_dcl,
+        // cfunc_t operations
+        idalib_hexrays_cfunc_pseudocode,
+        idalib_hexrays_cfunc_refresh,
+        idalib_hexrays_cfunc_remove_unused_labels,
+        idalib_hexrays_cfunc_save_user_cmts,
+        idalib_hexrays_cfunc_save_user_iflags,
+        idalib_hexrays_cfunc_save_user_labels,
+        idalib_hexrays_cfunc_save_user_numforms,
+        idalib_hexrays_cfunc_save_user_unions,
+        idalib_hexrays_cfunc_stkoff_delta,
+        idalib_hexrays_cfunc_type_str,
+        idalib_hexrays_cfunc_warning_at,
+        idalib_hexrays_cfunc_warning_ea_at,
+        idalib_hexrays_cfunc_warnings_count,
+        // Basic decompilation
+        idalib_hexrays_cfuncptr_inner,
+        idalib_hexrays_cinsn_cblock,
+        idalib_hexrays_cinsn_cexpr,
+        idalib_hexrays_cinsn_contains_free_break,
+        idalib_hexrays_cinsn_contains_free_continue,
+        idalib_hexrays_cinsn_do_body,
+        idalib_hexrays_cinsn_do_cond,
+        idalib_hexrays_cinsn_for_body,
+        idalib_hexrays_cinsn_for_cond,
+        idalib_hexrays_cinsn_for_init,
+        idalib_hexrays_cinsn_for_step,
+        idalib_hexrays_cinsn_goto_label,
+        idalib_hexrays_cinsn_if_cond,
+        idalib_hexrays_cinsn_if_else,
+        idalib_hexrays_cinsn_if_then,
+        idalib_hexrays_cinsn_is_ordinary_flow,
+        idalib_hexrays_cinsn_return_expr,
+        idalib_hexrays_cinsn_switch_cases_count,
+        idalib_hexrays_cinsn_switch_expr,
+        idalib_hexrays_cinsn_while_body,
+        idalib_hexrays_cinsn_while_cond,
+        idalib_hexrays_cit_asm,
+        idalib_hexrays_cit_block,
+        idalib_hexrays_cit_break,
+        idalib_hexrays_cit_continue,
+        idalib_hexrays_cit_do,
+        idalib_hexrays_cit_empty,
+        idalib_hexrays_cit_expr,
+        idalib_hexrays_cit_for,
+        idalib_hexrays_cit_goto,
+        idalib_hexrays_cit_if,
+        idalib_hexrays_cit_return,
+        idalib_hexrays_cit_switch,
+        idalib_hexrays_cit_throw,
+        idalib_hexrays_cit_try,
+        idalib_hexrays_cit_while,
+        idalib_hexrays_citem_contains_label,
+        // citem_t operations
+        idalib_hexrays_citem_ea,
+        idalib_hexrays_citem_is_expr,
+        idalib_hexrays_citem_label_num,
+        idalib_hexrays_citem_op,
+        idalib_hexrays_citem_print,
+        idalib_hexrays_clear_cached_cfuncs,
+        idalib_hexrays_cot_add,
+        idalib_hexrays_cot_asg,
+        idalib_hexrays_cot_asgadd,
+        idalib_hexrays_cot_asgband,
+        idalib_hexrays_cot_asgbor,
+        idalib_hexrays_cot_asgmul,
+        idalib_hexrays_cot_asgsdiv,
+        idalib_hexrays_cot_asgshl,
+        idalib_hexrays_cot_asgsmod,
+        idalib_hexrays_cot_asgsshr,
+        idalib_hexrays_cot_asgsub,
+        idalib_hexrays_cot_asgudiv,
+        idalib_hexrays_cot_asgumod,
+        idalib_hexrays_cot_asgushr,
+        idalib_hexrays_cot_asgxor,
+        idalib_hexrays_cot_band,
+        idalib_hexrays_cot_bnot,
+        idalib_hexrays_cot_bor,
+        idalib_hexrays_cot_call,
+        idalib_hexrays_cot_cast,
+        idalib_hexrays_cot_comma,
+        // ctype_t constants
+        idalib_hexrays_cot_empty,
+        idalib_hexrays_cot_eq,
+        idalib_hexrays_cot_fadd,
+        idalib_hexrays_cot_fdiv,
+        idalib_hexrays_cot_fmul,
+        idalib_hexrays_cot_fneg,
+        idalib_hexrays_cot_fnum,
+        idalib_hexrays_cot_fsub,
+        idalib_hexrays_cot_helper,
+        idalib_hexrays_cot_idx,
+        idalib_hexrays_cot_insn,
+        idalib_hexrays_cot_land,
+        idalib_hexrays_cot_last,
+        idalib_hexrays_cot_lnot,
+        idalib_hexrays_cot_lor,
+        idalib_hexrays_cot_memptr,
+        idalib_hexrays_cot_memref,
+        idalib_hexrays_cot_mul,
+        idalib_hexrays_cot_ne,
+        idalib_hexrays_cot_neg,
+        idalib_hexrays_cot_num,
+        idalib_hexrays_cot_obj,
+        idalib_hexrays_cot_postdec,
+        idalib_hexrays_cot_postinc,
+        idalib_hexrays_cot_predec,
+        idalib_hexrays_cot_preinc,
+        idalib_hexrays_cot_ptr,
+        idalib_hexrays_cot_ref,
+        idalib_hexrays_cot_sdiv,
+        idalib_hexrays_cot_sge,
+        idalib_hexrays_cot_sgt,
+        idalib_hexrays_cot_shl,
+        idalib_hexrays_cot_sizeof,
+        idalib_hexrays_cot_sle,
+        idalib_hexrays_cot_slt,
+        idalib_hexrays_cot_smod,
+        idalib_hexrays_cot_sshr,
+        idalib_hexrays_cot_str,
+        idalib_hexrays_cot_sub,
+        idalib_hexrays_cot_tern,
+        idalib_hexrays_cot_type,
+        idalib_hexrays_cot_udiv,
+        idalib_hexrays_cot_uge,
+        idalib_hexrays_cot_ugt,
+        idalib_hexrays_cot_ule,
+        idalib_hexrays_cot_ult,
+        idalib_hexrays_cot_umod,
+        idalib_hexrays_cot_ushr,
+        idalib_hexrays_cot_var,
+        idalib_hexrays_cot_xor,
+        idalib_hexrays_ctype_name,
+        idalib_hexrays_decomp_all_blks,
+        idalib_hexrays_decomp_no_cache,
+        idalib_hexrays_decomp_no_frame,
+        // Decompilation flags
+        idalib_hexrays_decomp_no_wait,
+        idalib_hexrays_decomp_warnings,
         idalib_hexrays_decompile_func,
+        idalib_hexrays_has_cached_cfunc,
+        idalib_hexrays_is_assignment_op,
+        idalib_hexrays_is_binary_op,
+        idalib_hexrays_is_commutative_op,
+        idalib_hexrays_is_loop_op,
+        idalib_hexrays_is_lvalue_op,
+        idalib_hexrays_is_relational_op,
+        idalib_hexrays_is_unary_op,
+        idalib_hexrays_lvar_cmt,
+        idalib_hexrays_lvar_defblk,
+        idalib_hexrays_lvar_defea,
+        idalib_hexrays_lvar_get_reg,
+        idalib_hexrays_lvar_get_stkoff,
+        idalib_hexrays_lvar_has_nice_name,
+        idalib_hexrays_lvar_has_user_name,
+        idalib_hexrays_lvar_has_user_type,
+        idalib_hexrays_lvar_is_arg,
+        idalib_hexrays_lvar_is_fake,
+        idalib_hexrays_lvar_is_floating,
+        idalib_hexrays_lvar_is_overlapped,
+        idalib_hexrays_lvar_is_reg_var,
+        idalib_hexrays_lvar_is_result,
+        idalib_hexrays_lvar_is_stk_var,
+        idalib_hexrays_lvar_is_thisarg,
+        idalib_hexrays_lvar_is_typed,
+        idalib_hexrays_lvar_is_used,
+        idalib_hexrays_lvar_is_used_byref,
+        // lvar_t operations
+        idalib_hexrays_lvar_name,
+        idalib_hexrays_lvar_type_str,
+        idalib_hexrays_lvar_width,
+        idalib_hexrays_lvars_iter_next,
+        // Cache management
+        idalib_hexrays_mark_cfunc_dirty,
+        idalib_hexrays_mba_entry_ea,
+        idalib_hexrays_mba_get_mblock,
+        idalib_hexrays_mba_maturity,
+        idalib_hexrays_mba_qty,
+        idalib_hexrays_mblock_end,
+        idalib_hexrays_mblock_head,
+        idalib_hexrays_mblock_npred,
+        idalib_hexrays_mblock_nsucc,
+        idalib_hexrays_mblock_pred,
+        // mblock_t operations
+        idalib_hexrays_mblock_serial,
+        idalib_hexrays_mblock_start,
+        idalib_hexrays_mblock_succ,
+        idalib_hexrays_mblock_tail,
+        idalib_hexrays_mblock_type,
+        idalib_hexrays_mcode_name,
+        idalib_hexrays_minsn_dstr,
+        idalib_hexrays_minsn_ea,
+        idalib_hexrays_minsn_next,
+        // minsn_t operations
+        idalib_hexrays_minsn_opcode,
+        idalib_hexrays_minsn_prev,
+        // Operator helpers
+        idalib_hexrays_negated_relation,
+        idalib_hexrays_swapped_relation,
+        // Types
+        lvar_t,
+        lvars_iter,
+        mba_t,
+        mblock_t,
+        minsn_t,
     };
 
     unsafe impl cxx::ExternType for cfunc_t {
@@ -775,8 +1031,18 @@ mod ffix {
         type cfunc_t = super::hexrays::cfunc_t;
         type cblock_t = super::hexrays::cblock_t;
         type cinsn_t = super::hexrays::cinsn_t;
+        type citem_t = super::hexrays::citem_t;
 
         type cblock_iter;
+        type lvars_iter;
+        type carglist_iter;
+        type cexpr_t = super::hexrays::cexpr_t;
+        type carg_t = super::ffi::carg_t;
+        type carglist_t = super::ffi::carglist_t;
+        type lvar_t;
+        type mba_t;
+        type mblock_t;
+        type minsn_t;
 
         type plugin_t = super::ffi::plugin_t;
 
@@ -818,6 +1084,263 @@ mod ffix {
         unsafe fn idalib_hexrays_cblock_iter(b: *mut cblock_t) -> UniquePtr<cblock_iter>;
         unsafe fn idalib_hexrays_cblock_iter_next(slf: Pin<&mut cblock_iter>) -> *mut cinsn_t;
         unsafe fn idalib_hexrays_cblock_len(b: *mut cblock_t) -> usize;
+
+        // cfunc_t operations
+        unsafe fn idalib_hexrays_cfunc_entry_ea(f: *const cfunc_t) -> u64;
+        unsafe fn idalib_hexrays_cfunc_maturity(f: *const cfunc_t) -> c_int;
+        unsafe fn idalib_hexrays_cfunc_hdrlines(f: *const cfunc_t) -> c_int;
+        unsafe fn idalib_hexrays_cfunc_print_dcl(f: *const cfunc_t) -> String;
+        unsafe fn idalib_hexrays_cfunc_type_str(f: *const cfunc_t) -> String;
+        unsafe fn idalib_hexrays_cfunc_lvars_count(f: *mut cfunc_t) -> usize;
+        unsafe fn idalib_hexrays_cfunc_lvars_iter(f: *mut cfunc_t) -> UniquePtr<lvars_iter>;
+        unsafe fn idalib_hexrays_lvars_iter_next(it: Pin<&mut lvars_iter>) -> *mut lvar_t;
+        unsafe fn idalib_hexrays_cfunc_argidx_count(f: *const cfunc_t) -> usize;
+        unsafe fn idalib_hexrays_cfunc_argidx_at(f: *const cfunc_t, i: usize) -> c_int;
+        unsafe fn idalib_hexrays_cfunc_stkoff_delta(f: *mut cfunc_t) -> i64;
+        unsafe fn idalib_hexrays_cfunc_has_orphan_cmts(f: *const cfunc_t) -> bool;
+        unsafe fn idalib_hexrays_cfunc_del_orphan_cmts(f: *mut cfunc_t) -> c_int;
+        unsafe fn idalib_hexrays_cfunc_warnings_count(f: *mut cfunc_t) -> usize;
+        unsafe fn idalib_hexrays_cfunc_warning_at(f: *mut cfunc_t, idx: usize) -> String;
+        unsafe fn idalib_hexrays_cfunc_warning_ea_at(f: *mut cfunc_t, idx: usize) -> u64;
+        unsafe fn idalib_hexrays_cfunc_find_label(f: *mut cfunc_t, label: c_int) -> *mut citem_t;
+        unsafe fn idalib_hexrays_cfunc_remove_unused_labels(f: *mut cfunc_t);
+        unsafe fn idalib_hexrays_cfunc_refresh(f: *mut cfunc_t);
+        unsafe fn idalib_hexrays_cfunc_save_user_cmts(f: *const cfunc_t);
+        unsafe fn idalib_hexrays_cfunc_save_user_labels(f: *const cfunc_t);
+        unsafe fn idalib_hexrays_cfunc_save_user_numforms(f: *const cfunc_t);
+        unsafe fn idalib_hexrays_cfunc_save_user_iflags(f: *const cfunc_t);
+        unsafe fn idalib_hexrays_cfunc_save_user_unions(f: *const cfunc_t);
+
+        // citem_t operations
+        unsafe fn idalib_hexrays_citem_ea(item: *const citem_t) -> u64;
+        unsafe fn idalib_hexrays_citem_op(item: *const citem_t) -> c_int;
+        unsafe fn idalib_hexrays_citem_is_expr(item: *const citem_t) -> bool;
+        unsafe fn idalib_hexrays_citem_label_num(item: *const citem_t) -> c_int;
+        unsafe fn idalib_hexrays_citem_contains_label(item: *const citem_t) -> bool;
+        unsafe fn idalib_hexrays_citem_print(item: *const citem_t) -> String;
+        unsafe fn idalib_hexrays_ctype_name(op: c_int) -> String;
+
+        // cexpr_t operations
+        unsafe fn idalib_hexrays_cexpr_type_str(e: *const cexpr_t) -> String;
+        unsafe fn idalib_hexrays_cexpr_type_size(e: *const cexpr_t) -> usize;
+        unsafe fn idalib_hexrays_cexpr_type_is_signed(e: *const cexpr_t) -> bool;
+        unsafe fn idalib_hexrays_cexpr_type_is_unsigned(e: *const cexpr_t) -> bool;
+        unsafe fn idalib_hexrays_cexpr_type_is_ptr(e: *const cexpr_t) -> bool;
+        unsafe fn idalib_hexrays_cexpr_type_is_array(e: *const cexpr_t) -> bool;
+        unsafe fn idalib_hexrays_cexpr_type_is_struct(e: *const cexpr_t) -> bool;
+        unsafe fn idalib_hexrays_cexpr_type_is_union(e: *const cexpr_t) -> bool;
+        unsafe fn idalib_hexrays_cexpr_type_is_float(e: *const cexpr_t) -> bool;
+        unsafe fn idalib_hexrays_cexpr_x(e: *mut cexpr_t) -> *mut cexpr_t;
+        unsafe fn idalib_hexrays_cexpr_y(e: *mut cexpr_t) -> *mut cexpr_t;
+        unsafe fn idalib_hexrays_cexpr_z(e: *mut cexpr_t) -> *mut cexpr_t;
+        unsafe fn idalib_hexrays_cexpr_numval(e: *const cexpr_t) -> u64;
+        unsafe fn idalib_hexrays_cexpr_obj_ea(e: *const cexpr_t) -> u64;
+        unsafe fn idalib_hexrays_cexpr_var_idx(e: *const cexpr_t) -> c_int;
+        unsafe fn idalib_hexrays_cexpr_str(e: *const cexpr_t) -> String;
+        unsafe fn idalib_hexrays_cexpr_helper(e: *const cexpr_t) -> String;
+        unsafe fn idalib_hexrays_cexpr_member_offset(e: *const cexpr_t) -> u32;
+        unsafe fn idalib_hexrays_cexpr_ptrsize(e: *const cexpr_t) -> c_int;
+        unsafe fn idalib_hexrays_cexpr_call_args(e: *mut cexpr_t) -> *mut carglist_t;
+        unsafe fn idalib_hexrays_cexpr_is_nice(e: *const cexpr_t) -> bool;
+        unsafe fn idalib_hexrays_cexpr_is_call(e: *const cexpr_t) -> bool;
+        unsafe fn idalib_hexrays_cexpr_exflags(e: *const cexpr_t) -> u32;
+        unsafe fn idalib_hexrays_cexpr_is_cstr(e: *const cexpr_t) -> bool;
+        unsafe fn idalib_hexrays_cexpr_is_fpop(e: *const cexpr_t) -> bool;
+        unsafe fn idalib_hexrays_cexpr_is_undef_val(e: *const cexpr_t) -> bool;
+
+        // cinsn_t operations
+        unsafe fn idalib_hexrays_cinsn_cblock(s: *mut cinsn_t) -> *mut cblock_t;
+        unsafe fn idalib_hexrays_cinsn_cexpr(s: *mut cinsn_t) -> *mut cexpr_t;
+        unsafe fn idalib_hexrays_cinsn_if_cond(s: *mut cinsn_t) -> *mut cexpr_t;
+        unsafe fn idalib_hexrays_cinsn_if_then(s: *mut cinsn_t) -> *mut cinsn_t;
+        unsafe fn idalib_hexrays_cinsn_if_else(s: *mut cinsn_t) -> *mut cinsn_t;
+        unsafe fn idalib_hexrays_cinsn_for_init(s: *mut cinsn_t) -> *mut cexpr_t;
+        unsafe fn idalib_hexrays_cinsn_for_cond(s: *mut cinsn_t) -> *mut cexpr_t;
+        unsafe fn idalib_hexrays_cinsn_for_step(s: *mut cinsn_t) -> *mut cexpr_t;
+        unsafe fn idalib_hexrays_cinsn_for_body(s: *mut cinsn_t) -> *mut cinsn_t;
+        unsafe fn idalib_hexrays_cinsn_while_cond(s: *mut cinsn_t) -> *mut cexpr_t;
+        unsafe fn idalib_hexrays_cinsn_while_body(s: *mut cinsn_t) -> *mut cinsn_t;
+        unsafe fn idalib_hexrays_cinsn_do_cond(s: *mut cinsn_t) -> *mut cexpr_t;
+        unsafe fn idalib_hexrays_cinsn_do_body(s: *mut cinsn_t) -> *mut cinsn_t;
+        unsafe fn idalib_hexrays_cinsn_return_expr(s: *mut cinsn_t) -> *mut cexpr_t;
+        unsafe fn idalib_hexrays_cinsn_goto_label(s: *mut cinsn_t) -> c_int;
+        unsafe fn idalib_hexrays_cinsn_switch_expr(s: *mut cinsn_t) -> *mut cexpr_t;
+        unsafe fn idalib_hexrays_cinsn_switch_cases_count(s: *mut cinsn_t) -> usize;
+        unsafe fn idalib_hexrays_cinsn_is_ordinary_flow(s: *const cinsn_t) -> bool;
+        unsafe fn idalib_hexrays_cinsn_contains_free_break(s: *const cinsn_t) -> bool;
+        unsafe fn idalib_hexrays_cinsn_contains_free_continue(s: *const cinsn_t) -> bool;
+
+        // carglist_t operations
+        unsafe fn idalib_hexrays_carglist_count(args: *const carglist_t) -> usize;
+        unsafe fn idalib_hexrays_carglist_at(args: *mut carglist_t, idx: usize) -> *mut carg_t;
+        unsafe fn idalib_hexrays_carglist_iter(args: *mut carglist_t) -> UniquePtr<carglist_iter>;
+        unsafe fn idalib_hexrays_carglist_iter_next(it: Pin<&mut carglist_iter>) -> *mut carg_t;
+        unsafe fn idalib_hexrays_carg_formal_type_str(arg: *const carg_t) -> String;
+        unsafe fn idalib_hexrays_carg_is_vararg(arg: *const carg_t) -> bool;
+
+        // lvar_t operations
+        unsafe fn idalib_hexrays_lvar_name(v: *const lvar_t) -> String;
+        unsafe fn idalib_hexrays_lvar_type_str(v: *const lvar_t) -> String;
+        unsafe fn idalib_hexrays_lvar_cmt(v: *const lvar_t) -> String;
+        unsafe fn idalib_hexrays_lvar_width(v: *const lvar_t) -> c_int;
+        unsafe fn idalib_hexrays_lvar_defblk(v: *const lvar_t) -> c_int;
+        unsafe fn idalib_hexrays_lvar_defea(v: *const lvar_t) -> u64;
+        unsafe fn idalib_hexrays_lvar_is_used(v: *const lvar_t) -> bool;
+        unsafe fn idalib_hexrays_lvar_is_typed(v: *const lvar_t) -> bool;
+        unsafe fn idalib_hexrays_lvar_has_nice_name(v: *const lvar_t) -> bool;
+        unsafe fn idalib_hexrays_lvar_has_user_name(v: *const lvar_t) -> bool;
+        unsafe fn idalib_hexrays_lvar_has_user_type(v: *const lvar_t) -> bool;
+        unsafe fn idalib_hexrays_lvar_is_arg(v: *const lvar_t) -> bool;
+        unsafe fn idalib_hexrays_lvar_is_result(v: *const lvar_t) -> bool;
+        unsafe fn idalib_hexrays_lvar_is_thisarg(v: *const lvar_t) -> bool;
+        unsafe fn idalib_hexrays_lvar_is_fake(v: *const lvar_t) -> bool;
+        unsafe fn idalib_hexrays_lvar_is_overlapped(v: *const lvar_t) -> bool;
+        unsafe fn idalib_hexrays_lvar_is_floating(v: *const lvar_t) -> bool;
+        unsafe fn idalib_hexrays_lvar_is_stk_var(v: *const lvar_t) -> bool;
+        unsafe fn idalib_hexrays_lvar_is_reg_var(v: *const lvar_t) -> bool;
+        unsafe fn idalib_hexrays_lvar_get_reg(v: *const lvar_t) -> c_int;
+        unsafe fn idalib_hexrays_lvar_get_stkoff(v: *const lvar_t) -> i64;
+        unsafe fn idalib_hexrays_lvar_is_used_byref(v: *const lvar_t) -> bool;
+
+        // Operator helpers
+        unsafe fn idalib_hexrays_negated_relation(op: c_int) -> c_int;
+        unsafe fn idalib_hexrays_swapped_relation(op: c_int) -> c_int;
+        unsafe fn idalib_hexrays_is_binary_op(op: c_int) -> bool;
+        unsafe fn idalib_hexrays_is_unary_op(op: c_int) -> bool;
+        unsafe fn idalib_hexrays_is_relational_op(op: c_int) -> bool;
+        unsafe fn idalib_hexrays_is_assignment_op(op: c_int) -> bool;
+        unsafe fn idalib_hexrays_is_loop_op(op: c_int) -> bool;
+        unsafe fn idalib_hexrays_is_lvalue_op(op: c_int) -> bool;
+        unsafe fn idalib_hexrays_is_commutative_op(op: c_int) -> bool;
+
+        // Microcode operations
+        unsafe fn idalib_hexrays_cfunc_mba(f: *mut cfunc_t) -> *mut mba_t;
+        unsafe fn idalib_hexrays_mba_qty(mba: *const mba_t) -> c_int;
+        unsafe fn idalib_hexrays_mba_entry_ea(mba: *const mba_t) -> u64;
+        unsafe fn idalib_hexrays_mba_maturity(mba: *const mba_t) -> c_int;
+        unsafe fn idalib_hexrays_mba_get_mblock(mba: *mut mba_t, n: c_int) -> *mut mblock_t;
+
+        // mblock_t operations
+        unsafe fn idalib_hexrays_mblock_serial(blk: *const mblock_t) -> c_int;
+        unsafe fn idalib_hexrays_mblock_start(blk: *const mblock_t) -> u64;
+        unsafe fn idalib_hexrays_mblock_end(blk: *const mblock_t) -> u64;
+        unsafe fn idalib_hexrays_mblock_type(blk: *const mblock_t) -> c_int;
+        unsafe fn idalib_hexrays_mblock_npred(blk: *const mblock_t) -> c_int;
+        unsafe fn idalib_hexrays_mblock_nsucc(blk: *const mblock_t) -> c_int;
+        unsafe fn idalib_hexrays_mblock_pred(blk: *const mblock_t, n: c_int) -> c_int;
+        unsafe fn idalib_hexrays_mblock_succ(blk: *const mblock_t, n: c_int) -> c_int;
+        unsafe fn idalib_hexrays_mblock_head(blk: *mut mblock_t) -> *mut minsn_t;
+        unsafe fn idalib_hexrays_mblock_tail(blk: *mut mblock_t) -> *mut minsn_t;
+
+        // minsn_t operations
+        unsafe fn idalib_hexrays_minsn_opcode(insn: *const minsn_t) -> c_int;
+        unsafe fn idalib_hexrays_minsn_ea(insn: *const minsn_t) -> u64;
+        unsafe fn idalib_hexrays_minsn_next(insn: *mut minsn_t) -> *mut minsn_t;
+        unsafe fn idalib_hexrays_minsn_prev(insn: *mut minsn_t) -> *mut minsn_t;
+        unsafe fn idalib_hexrays_minsn_dstr(insn: *const minsn_t) -> String;
+        unsafe fn idalib_hexrays_mcode_name(opcode: c_int) -> String;
+
+        // Cache management
+        unsafe fn idalib_hexrays_mark_cfunc_dirty(ea: u64, close_views: bool) -> bool;
+        unsafe fn idalib_hexrays_clear_cached_cfuncs();
+        unsafe fn idalib_hexrays_has_cached_cfunc(ea: u64) -> bool;
+
+        // Decompilation flags
+        unsafe fn idalib_hexrays_decomp_no_wait() -> c_int;
+        unsafe fn idalib_hexrays_decomp_no_cache() -> c_int;
+        unsafe fn idalib_hexrays_decomp_no_frame() -> c_int;
+        unsafe fn idalib_hexrays_decomp_warnings() -> c_int;
+        unsafe fn idalib_hexrays_decomp_all_blks() -> c_int;
+
+        // ctype_t constants - expressions
+        unsafe fn idalib_hexrays_cot_empty() -> c_int;
+        unsafe fn idalib_hexrays_cot_comma() -> c_int;
+        unsafe fn idalib_hexrays_cot_asg() -> c_int;
+        unsafe fn idalib_hexrays_cot_asgbor() -> c_int;
+        unsafe fn idalib_hexrays_cot_asgxor() -> c_int;
+        unsafe fn idalib_hexrays_cot_asgband() -> c_int;
+        unsafe fn idalib_hexrays_cot_asgadd() -> c_int;
+        unsafe fn idalib_hexrays_cot_asgsub() -> c_int;
+        unsafe fn idalib_hexrays_cot_asgmul() -> c_int;
+        unsafe fn idalib_hexrays_cot_asgsshr() -> c_int;
+        unsafe fn idalib_hexrays_cot_asgushr() -> c_int;
+        unsafe fn idalib_hexrays_cot_asgshl() -> c_int;
+        unsafe fn idalib_hexrays_cot_asgsdiv() -> c_int;
+        unsafe fn idalib_hexrays_cot_asgudiv() -> c_int;
+        unsafe fn idalib_hexrays_cot_asgsmod() -> c_int;
+        unsafe fn idalib_hexrays_cot_asgumod() -> c_int;
+        unsafe fn idalib_hexrays_cot_tern() -> c_int;
+        unsafe fn idalib_hexrays_cot_lor() -> c_int;
+        unsafe fn idalib_hexrays_cot_land() -> c_int;
+        unsafe fn idalib_hexrays_cot_bor() -> c_int;
+        unsafe fn idalib_hexrays_cot_xor() -> c_int;
+        unsafe fn idalib_hexrays_cot_band() -> c_int;
+        unsafe fn idalib_hexrays_cot_eq() -> c_int;
+        unsafe fn idalib_hexrays_cot_ne() -> c_int;
+        unsafe fn idalib_hexrays_cot_sge() -> c_int;
+        unsafe fn idalib_hexrays_cot_uge() -> c_int;
+        unsafe fn idalib_hexrays_cot_sle() -> c_int;
+        unsafe fn idalib_hexrays_cot_ule() -> c_int;
+        unsafe fn idalib_hexrays_cot_sgt() -> c_int;
+        unsafe fn idalib_hexrays_cot_ugt() -> c_int;
+        unsafe fn idalib_hexrays_cot_slt() -> c_int;
+        unsafe fn idalib_hexrays_cot_ult() -> c_int;
+        unsafe fn idalib_hexrays_cot_sshr() -> c_int;
+        unsafe fn idalib_hexrays_cot_ushr() -> c_int;
+        unsafe fn idalib_hexrays_cot_shl() -> c_int;
+        unsafe fn idalib_hexrays_cot_add() -> c_int;
+        unsafe fn idalib_hexrays_cot_sub() -> c_int;
+        unsafe fn idalib_hexrays_cot_mul() -> c_int;
+        unsafe fn idalib_hexrays_cot_sdiv() -> c_int;
+        unsafe fn idalib_hexrays_cot_udiv() -> c_int;
+        unsafe fn idalib_hexrays_cot_smod() -> c_int;
+        unsafe fn idalib_hexrays_cot_umod() -> c_int;
+        unsafe fn idalib_hexrays_cot_fadd() -> c_int;
+        unsafe fn idalib_hexrays_cot_fsub() -> c_int;
+        unsafe fn idalib_hexrays_cot_fmul() -> c_int;
+        unsafe fn idalib_hexrays_cot_fdiv() -> c_int;
+        unsafe fn idalib_hexrays_cot_fneg() -> c_int;
+        unsafe fn idalib_hexrays_cot_neg() -> c_int;
+        unsafe fn idalib_hexrays_cot_cast() -> c_int;
+        unsafe fn idalib_hexrays_cot_lnot() -> c_int;
+        unsafe fn idalib_hexrays_cot_bnot() -> c_int;
+        unsafe fn idalib_hexrays_cot_ptr() -> c_int;
+        unsafe fn idalib_hexrays_cot_ref() -> c_int;
+        unsafe fn idalib_hexrays_cot_postinc() -> c_int;
+        unsafe fn idalib_hexrays_cot_postdec() -> c_int;
+        unsafe fn idalib_hexrays_cot_preinc() -> c_int;
+        unsafe fn idalib_hexrays_cot_predec() -> c_int;
+        unsafe fn idalib_hexrays_cot_call() -> c_int;
+        unsafe fn idalib_hexrays_cot_idx() -> c_int;
+        unsafe fn idalib_hexrays_cot_memref() -> c_int;
+        unsafe fn idalib_hexrays_cot_memptr() -> c_int;
+        unsafe fn idalib_hexrays_cot_num() -> c_int;
+        unsafe fn idalib_hexrays_cot_fnum() -> c_int;
+        unsafe fn idalib_hexrays_cot_str() -> c_int;
+        unsafe fn idalib_hexrays_cot_obj() -> c_int;
+        unsafe fn idalib_hexrays_cot_var() -> c_int;
+        unsafe fn idalib_hexrays_cot_insn() -> c_int;
+        unsafe fn idalib_hexrays_cot_sizeof() -> c_int;
+        unsafe fn idalib_hexrays_cot_helper() -> c_int;
+        unsafe fn idalib_hexrays_cot_type() -> c_int;
+        unsafe fn idalib_hexrays_cot_last() -> c_int;
+
+        // ctype_t constants - statements
+        unsafe fn idalib_hexrays_cit_empty() -> c_int;
+        unsafe fn idalib_hexrays_cit_block() -> c_int;
+        unsafe fn idalib_hexrays_cit_expr() -> c_int;
+        unsafe fn idalib_hexrays_cit_if() -> c_int;
+        unsafe fn idalib_hexrays_cit_for() -> c_int;
+        unsafe fn idalib_hexrays_cit_while() -> c_int;
+        unsafe fn idalib_hexrays_cit_do() -> c_int;
+        unsafe fn idalib_hexrays_cit_switch() -> c_int;
+        unsafe fn idalib_hexrays_cit_break() -> c_int;
+        unsafe fn idalib_hexrays_cit_continue() -> c_int;
+        unsafe fn idalib_hexrays_cit_return() -> c_int;
+        unsafe fn idalib_hexrays_cit_goto() -> c_int;
+        unsafe fn idalib_hexrays_cit_asm() -> c_int;
+        unsafe fn idalib_hexrays_cit_try() -> c_int;
+        unsafe fn idalib_hexrays_cit_throw() -> c_int;
 
         unsafe fn idalib_inf_get_version() -> u16;
         unsafe fn idalib_inf_get_genflags() -> u16;

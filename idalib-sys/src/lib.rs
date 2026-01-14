@@ -730,6 +730,7 @@ mod ffix {
         include!("fixup_extras.h");
         include!("frame_extras.h");
         include!("func_extras.h");
+        include!("funcs_extras.h");
         include!("hexrays_extras.h");
         include!("idalib_extras.h");
         include!("inf_extras.h");
@@ -738,10 +739,17 @@ mod ffix {
         include!("loader_extras.h");
         include!("nalt_extras.h");
         include!("name_extras.h");
+        include!("netnode_extras.h");
+        include!("offset_extras.h");
         include!("ph_extras.h");
+        include!("problems_extras.h");
         include!("segm_extras.h");
         include!("search_extras.h");
+        include!("segregs_extras.h");
         include!("strings_extras.h");
+        include!("tryblks_extras.h");
+        include!("typeinf_extras.h");
+        include!("xref_extras.h");
 
         type c_short = autocxx::c_short;
         type c_int = autocxx::c_int;
@@ -1296,6 +1304,356 @@ mod ffix {
         unsafe fn idalib_del_sourcefile(ea: c_ulonglong) -> bool;
         unsafe fn idalib_calc_prefix_color(ea: c_ulonglong) -> u8;
         unsafe fn idalib_calc_bg_color(ea: c_ulonglong) -> u32;
+
+        // xref operations
+        unsafe fn idalib_add_cref(from: c_ulonglong, to: c_ulonglong, xref_type: c_int) -> bool;
+        unsafe fn idalib_del_cref(from: c_ulonglong, to: c_ulonglong, expand: bool) -> bool;
+        unsafe fn idalib_add_dref(from: c_ulonglong, to: c_ulonglong, xref_type: c_int) -> bool;
+        unsafe fn idalib_del_dref(from: c_ulonglong, to: c_ulonglong);
+        unsafe fn idalib_xrefchar(xrtype: c_int) -> c_char;
+        unsafe fn idalib_has_jump_or_flow_xref(ea: c_ulonglong) -> bool;
+        unsafe fn idalib_create_xrefs_from(ea: c_ulonglong) -> bool;
+        unsafe fn idalib_delete_all_xrefs_from(ea: c_ulonglong, expand: bool);
+        unsafe fn idalib_get_first_dref_from(from: c_ulonglong) -> c_ulonglong;
+        unsafe fn idalib_get_next_dref_from(from: c_ulonglong, current: c_ulonglong)
+        -> c_ulonglong;
+        unsafe fn idalib_get_first_dref_to(to: c_ulonglong) -> c_ulonglong;
+        unsafe fn idalib_get_next_dref_to(to: c_ulonglong, current: c_ulonglong) -> c_ulonglong;
+        unsafe fn idalib_get_first_cref_from(from: c_ulonglong) -> c_ulonglong;
+        unsafe fn idalib_get_next_cref_from(from: c_ulonglong, current: c_ulonglong)
+        -> c_ulonglong;
+        unsafe fn idalib_get_first_cref_to(to: c_ulonglong) -> c_ulonglong;
+        unsafe fn idalib_get_next_cref_to(to: c_ulonglong, current: c_ulonglong) -> c_ulonglong;
+        unsafe fn idalib_get_first_fcref_from(from: c_ulonglong) -> c_ulonglong;
+        unsafe fn idalib_get_next_fcref_from(
+            from: c_ulonglong,
+            current: c_ulonglong,
+        ) -> c_ulonglong;
+        unsafe fn idalib_get_first_fcref_to(to: c_ulonglong) -> c_ulonglong;
+        unsafe fn idalib_get_next_fcref_to(to: c_ulonglong, current: c_ulonglong) -> c_ulonglong;
+
+        // function manipulation
+        unsafe fn idalib_add_func(ea1: c_ulonglong, ea2: c_ulonglong) -> bool;
+        unsafe fn idalib_del_func(ea: c_ulonglong) -> bool;
+        unsafe fn idalib_set_func_start(ea: c_ulonglong, newstart: c_ulonglong) -> c_int;
+        unsafe fn idalib_set_func_end(ea: c_ulonglong, newend: c_ulonglong) -> bool;
+        unsafe fn idalib_update_func(pfn: *mut func_t) -> bool;
+        unsafe fn idalib_get_prev_func(ea: c_ulonglong) -> *mut func_t;
+        unsafe fn idalib_get_next_func(ea: c_ulonglong) -> *mut func_t;
+        unsafe fn idalib_reanalyze_function(
+            pfn: *mut func_t,
+            ea1: c_ulonglong,
+            ea2: c_ulonglong,
+            analyze_parents: bool,
+        );
+        unsafe fn idalib_find_func_bounds(nfn: *mut func_t, flags: c_int) -> c_int;
+        unsafe fn idalib_calc_func_size(pfn: *mut func_t) -> u64;
+        unsafe fn idalib_get_func_bitness(pfn: *const func_t) -> c_int;
+        unsafe fn idalib_set_visible_func(pfn: *mut func_t, visible: bool);
+        unsafe fn idalib_is_visible_func(pfn: *mut func_t) -> bool;
+        unsafe fn idalib_func_does_return(callee: c_ulonglong) -> bool;
+        unsafe fn idalib_reanalyze_noret_flag(ea: c_ulonglong) -> bool;
+        unsafe fn idalib_set_noret_insn(insn_ea: c_ulonglong, noret: bool) -> bool;
+        unsafe fn idalib_is_func_locked(pfn: *const func_t) -> bool;
+        unsafe fn idalib_lock_func_range(pfn: *const func_t, lock: bool);
+        unsafe fn idalib_append_func_tail(
+            pfn: *mut func_t,
+            ea1: c_ulonglong,
+            ea2: c_ulonglong,
+        ) -> bool;
+        unsafe fn idalib_remove_func_tail(pfn: *mut func_t, tail_ea: c_ulonglong) -> bool;
+        unsafe fn idalib_set_tail_owner(fnt: *mut func_t, new_owner: c_ulonglong) -> bool;
+        unsafe fn idalib_get_fchunk(ea: c_ulonglong) -> *mut func_t;
+        unsafe fn idalib_getn_fchunk(n: c_int) -> *mut func_t;
+        unsafe fn idalib_get_fchunk_qty() -> usize;
+        unsafe fn idalib_get_prev_func_addr(pfn: *mut func_t, ea: c_ulonglong) -> c_ulonglong;
+        unsafe fn idalib_get_next_func_addr(pfn: *mut func_t, ea: c_ulonglong) -> c_ulonglong;
+        unsafe fn idalib_get_func_ranges(pfn: *mut func_t) -> String;
+        unsafe fn idalib_apply_idasgn_to(
+            signame: *const c_char,
+            ea: c_ulonglong,
+            is_startup: bool,
+        ) -> c_int;
+        unsafe fn idalib_get_idasgn_qty() -> c_int;
+        unsafe fn idalib_plan_to_apply_idasgn(fname: *const c_char) -> c_int;
+
+        // segment manipulation
+        unsafe fn idalib_add_segm(
+            para: c_ulonglong,
+            start: c_ulonglong,
+            end: c_ulonglong,
+            name: *const c_char,
+            sclass: *const c_char,
+        ) -> bool;
+        unsafe fn idalib_del_segm(ea: c_ulonglong, flags: c_int) -> bool;
+        unsafe fn idalib_set_segm_start(
+            ea: c_ulonglong,
+            newstart: c_ulonglong,
+            flags: c_int,
+        ) -> bool;
+        unsafe fn idalib_set_segm_end(ea: c_ulonglong, newend: c_ulonglong, flags: c_int) -> bool;
+        unsafe fn idalib_move_segm_start(
+            ea: c_ulonglong,
+            newstart: c_ulonglong,
+            mode: c_int,
+        ) -> bool;
+        unsafe fn idalib_set_segm_base(s: *mut segment_t, newbase: c_ulonglong) -> bool;
+        unsafe fn idalib_get_segm_num(ea: c_ulonglong) -> c_int;
+        unsafe fn idalib_get_next_seg(ea: c_ulonglong) -> *mut segment_t;
+        unsafe fn idalib_get_prev_seg(ea: c_ulonglong) -> *mut segment_t;
+        unsafe fn idalib_get_first_seg() -> *mut segment_t;
+        unsafe fn idalib_get_last_seg() -> *mut segment_t;
+        unsafe fn idalib_set_visible_segm(s: *mut segment_t, visible: bool);
+        unsafe fn idalib_is_visible_segm(s: *mut segment_t) -> bool;
+        unsafe fn idalib_is_spec_segm(seg_type: u8) -> bool;
+        unsafe fn idalib_is_spec_ea(ea: c_ulonglong) -> bool;
+        unsafe fn idalib_lock_segm(segm: *const segment_t, lock: bool);
+        unsafe fn idalib_is_segm_locked(segm: *const segment_t) -> bool;
+        unsafe fn idalib_move_segm(s: *mut segment_t, to: c_ulonglong, flags: c_int) -> c_int;
+        unsafe fn idalib_rebase_program(delta: i64, flags: c_int) -> c_int;
+        unsafe fn idalib_get_segm_class(s: *const segment_t) -> String;
+        unsafe fn idalib_set_segm_class(s: *mut segment_t, sclass: *const c_char) -> c_int;
+        unsafe fn idalib_change_segment_status(s: *mut segment_t, is_deb_segm: bool) -> c_int;
+        unsafe fn idalib_take_memory_snapshot(snapshot_type: c_int) -> bool;
+        unsafe fn idalib_is_miniidb() -> bool;
+        unsafe fn idalib_setup_selector(segbase: c_ulonglong) -> u64;
+        unsafe fn idalib_allocate_selector(segbase: c_ulonglong) -> u64;
+        unsafe fn idalib_find_free_selector() -> u64;
+        unsafe fn idalib_del_selector(selector: u64);
+        unsafe fn idalib_get_selector_qty() -> usize;
+        unsafe fn idalib_sel2para(selector: u64) -> c_ulonglong;
+        unsafe fn idalib_find_selector(base: c_ulonglong) -> u64;
+
+        // problem markers
+        unsafe fn idalib_remember_problem(prob_type: c_int, ea: c_ulonglong, msg: *const c_char);
+        unsafe fn idalib_get_problem(prob_type: c_int, lowea: c_ulonglong) -> c_ulonglong;
+        unsafe fn idalib_forget_problem(prob_type: c_int, ea: c_ulonglong) -> bool;
+        unsafe fn idalib_is_problem_present(prob_type: c_int, ea: c_ulonglong) -> bool;
+        unsafe fn idalib_get_problem_name(prob_type: c_int, longname: bool) -> String;
+        unsafe fn idalib_get_problem_desc(prob_type: c_int, ea: c_ulonglong) -> String;
+
+        // offset operations
+        unsafe fn idalib_get_default_reftype(ea: c_ulonglong) -> c_int;
+        unsafe fn idalib_op_offset(
+            ea: c_ulonglong,
+            n: c_int,
+            reftype: c_int,
+            target: c_ulonglong,
+            base: c_ulonglong,
+            tdelta: i64,
+        ) -> bool;
+        unsafe fn idalib_get_offset_expression(
+            ea: c_ulonglong,
+            n: c_int,
+            from: c_ulonglong,
+            offset: i64,
+            geteflag: c_int,
+        ) -> String;
+        unsafe fn idalib_can_be_off32(ea: c_ulonglong) -> c_ulonglong;
+        unsafe fn idalib_calc_offset_base(ea: c_ulonglong, n: c_int) -> c_ulonglong;
+        unsafe fn idalib_calc_probable_base_by_value(ea: c_ulonglong, off: u64) -> c_ulonglong;
+        unsafe fn idalib_set_refinfo(
+            ea: c_ulonglong,
+            n: c_int,
+            reftype: c_int,
+            target: c_ulonglong,
+            base: c_ulonglong,
+            tdelta: i64,
+        ) -> bool;
+        unsafe fn idalib_get_refinfo(
+            ea: c_ulonglong,
+            n: c_int,
+            reftype: *mut c_int,
+            target: *mut c_ulonglong,
+            base: *mut c_ulonglong,
+            tdelta: *mut i64,
+        ) -> bool;
+        unsafe fn idalib_del_refinfo(ea: c_ulonglong, n: c_int) -> bool;
+
+        // extended nalt operations
+        unsafe fn idalib_get_root_filename() -> String;
+        unsafe fn idalib_dbg_get_input_path() -> String;
+        unsafe fn idalib_get_str_type(ea: c_ulonglong) -> u32;
+        unsafe fn idalib_set_str_type(ea: c_ulonglong, strtype: u32);
+        unsafe fn idalib_del_str_type(ea: c_ulonglong);
+        unsafe fn idalib_get_item_color(ea: c_ulonglong) -> u32;
+        unsafe fn idalib_set_item_color(ea: c_ulonglong, color: u32);
+        unsafe fn idalib_del_item_color(ea: c_ulonglong) -> bool;
+        unsafe fn idalib_get_source_linnum(ea: c_ulonglong) -> u64;
+        unsafe fn idalib_set_source_linnum(ea: c_ulonglong, lnnum: u64);
+        unsafe fn idalib_del_source_linnum(ea: c_ulonglong);
+        unsafe fn idalib_get_aflags(ea: c_ulonglong) -> u32;
+        unsafe fn idalib_set_aflags(ea: c_ulonglong, flags: u32);
+        unsafe fn idalib_set_abits(ea: c_ulonglong, bits: u32);
+        unsafe fn idalib_clr_abits(ea: c_ulonglong, bits: u32);
+        unsafe fn idalib_del_aflags(ea: c_ulonglong);
+        unsafe fn idalib_get_import_module_qty() -> u32;
+        unsafe fn idalib_get_import_module_name(mod_index: c_int) -> String;
+        unsafe fn idalib_get_encoding_qty() -> c_int;
+        unsafe fn idalib_get_encoding_name(idx: c_int) -> String;
+        unsafe fn idalib_add_encoding(encname: *const c_char) -> c_int;
+        unsafe fn idalib_del_encoding(idx: c_int) -> bool;
+        unsafe fn idalib_get_encoding_bpu(idx: c_int) -> c_int;
+        unsafe fn idalib_has_switch_info(ea: c_ulonglong) -> bool;
+        unsafe fn idalib_get_switch_jumps(ea: c_ulonglong) -> c_ulonglong;
+        unsafe fn idalib_get_switch_ncases(ea: c_ulonglong) -> c_int;
+        unsafe fn idalib_get_switch_lowcase(ea: c_ulonglong) -> i64;
+        unsafe fn idalib_del_switch_info(ea: c_ulonglong);
+        unsafe fn idalib_has_tinfo(ea: c_ulonglong) -> bool;
+        unsafe fn idalib_del_tinfo(ea: c_ulonglong) -> bool;
+        unsafe fn idalib_has_op_tinfo(ea: c_ulonglong, n: c_int) -> bool;
+
+        // segment register operations
+        unsafe fn idalib_get_sreg(ea: c_ulonglong, rg: c_int) -> u64;
+        unsafe fn idalib_set_default_sreg_value(sg: *mut segment_t, rg: c_int, value: u64) -> bool;
+        unsafe fn idalib_set_sreg_at_next_code(
+            ea1: c_ulonglong,
+            ea2: c_ulonglong,
+            rg: c_int,
+            value: u64,
+        );
+        unsafe fn idalib_split_sreg_range(
+            ea: c_ulonglong,
+            rg: c_int,
+            value: u64,
+            tag: c_int,
+            silent: bool,
+        ) -> bool;
+        unsafe fn idalib_get_sreg_range(
+            ea: c_ulonglong,
+            rg: c_int,
+            start: *mut c_ulonglong,
+            end: *mut c_ulonglong,
+            val: *mut u64,
+            tag: *mut c_int,
+        ) -> bool;
+        unsafe fn idalib_get_prev_sreg_range(
+            ea: c_ulonglong,
+            rg: c_int,
+            start: *mut c_ulonglong,
+            end: *mut c_ulonglong,
+            val: *mut u64,
+            tag: *mut c_int,
+        ) -> bool;
+        unsafe fn idalib_set_default_dataseg(ds_sel: u64);
+        unsafe fn idalib_get_sreg_ranges_qty(rg: c_int) -> usize;
+        unsafe fn idalib_del_sreg_range(ea: c_ulonglong, rg: c_int) -> bool;
+
+        // try/catch block operations
+        unsafe fn idalib_find_syseh(ea: c_ulonglong) -> c_ulonglong;
+        unsafe fn idalib_is_ea_tryblks(ea: c_ulonglong, flags: u32) -> bool;
+        unsafe fn idalib_del_tryblks(start: c_ulonglong, end: c_ulonglong);
+        unsafe fn idalib_get_tryblks_qty(start: c_ulonglong, end: c_ulonglong) -> usize;
+
+        // type information operations
+        unsafe fn idalib_get_type_str(ea: c_ulonglong) -> String;
+        unsafe fn idalib_set_type_str(ea: c_ulonglong, type_str: *const c_char) -> bool;
+        unsafe fn idalib_del_tinfo_at(ea: c_ulonglong) -> bool;
+        unsafe fn idalib_get_op_type_str(ea: c_ulonglong, n: c_int) -> String;
+        unsafe fn idalib_set_op_type_str(
+            ea: c_ulonglong,
+            n: c_int,
+            type_str: *const c_char,
+        ) -> bool;
+        unsafe fn idalib_get_func_type_str(ea: c_ulonglong) -> String;
+        unsafe fn idalib_set_func_type_str(ea: c_ulonglong, type_str: *const c_char) -> bool;
+        unsafe fn idalib_get_named_type_str(name: *const c_char) -> String;
+        unsafe fn idalib_named_type_exists(name: *const c_char) -> bool;
+        unsafe fn idalib_get_named_type_ordinal(name: *const c_char) -> u32;
+        unsafe fn idalib_get_numbered_type_str(ordinal: u32) -> String;
+        unsafe fn idalib_get_ordinal_qty() -> u32;
+        unsafe fn idalib_is_type_struct(ea: c_ulonglong) -> bool;
+        unsafe fn idalib_is_type_union(ea: c_ulonglong) -> bool;
+        unsafe fn idalib_is_type_enum(ea: c_ulonglong) -> bool;
+        unsafe fn idalib_is_type_ptr(ea: c_ulonglong) -> bool;
+        unsafe fn idalib_is_type_array(ea: c_ulonglong) -> bool;
+        unsafe fn idalib_is_type_func(ea: c_ulonglong) -> bool;
+        unsafe fn idalib_get_type_size(ea: c_ulonglong) -> u64;
+        unsafe fn idalib_get_named_type_size(name: *const c_char) -> u64;
+        unsafe fn idalib_parse_decl(
+            decl: *const c_char,
+            out_name: *mut String,
+            out_type: *mut String,
+        ) -> bool;
+        unsafe fn idalib_get_compiler_id() -> u8;
+        unsafe fn idalib_get_compiler_name_str() -> String;
+        unsafe fn idalib_get_compiler_abbr_str() -> String;
+        unsafe fn idalib_get_abi_name_str() -> String;
+        unsafe fn idalib_print_type(ea: c_ulonglong, prtype_flags: c_int) -> String;
+        unsafe fn idalib_get_udt_member_count(type_name: *const c_char) -> c_int;
+        unsafe fn idalib_get_udt_member_name(type_name: *const c_char, idx: c_int) -> String;
+        unsafe fn idalib_get_udt_member_type(type_name: *const c_char, idx: c_int) -> String;
+        unsafe fn idalib_get_udt_member_offset(type_name: *const c_char, idx: c_int) -> i64;
+        unsafe fn idalib_get_enum_member_count(type_name: *const c_char) -> c_int;
+        unsafe fn idalib_get_enum_member_name(type_name: *const c_char, idx: c_int) -> String;
+        unsafe fn idalib_get_enum_member_value(type_name: *const c_char, idx: c_int) -> i64;
+        unsafe fn idalib_get_func_arg_count(ea: c_ulonglong) -> c_int;
+        unsafe fn idalib_get_func_arg_name(ea: c_ulonglong, idx: c_int) -> String;
+        unsafe fn idalib_get_func_arg_type(ea: c_ulonglong, idx: c_int) -> String;
+        unsafe fn idalib_get_func_rettype(ea: c_ulonglong) -> String;
+        unsafe fn idalib_get_func_cc(ea: c_ulonglong) -> c_int;
+        unsafe fn idalib_add_local_type(decl: *const c_char, name: *const c_char) -> u32;
+        unsafe fn idalib_del_local_type(name: *const c_char) -> bool;
+        unsafe fn idalib_add_til(tilname: *const c_char) -> c_int;
+        unsafe fn idalib_del_til(tilname: *const c_char) -> bool;
+
+        // netnode operations
+        unsafe fn idalib_ea2node(ea: c_ulonglong) -> u64;
+        unsafe fn idalib_node2ea(ndx: u64) -> c_ulonglong;
+        unsafe fn idalib_netnode_create(name: *const c_char) -> u64;
+        unsafe fn idalib_netnode_find(name: *const c_char) -> u64;
+        unsafe fn idalib_netnode_kill(nodeidx: u64);
+        unsafe fn idalib_netnode_get_name(nodeidx: u64) -> String;
+        unsafe fn idalib_netnode_rename(nodeidx: u64, newname: *const c_char) -> bool;
+        unsafe fn idalib_netnode_altval(nodeidx: u64, alt: u64, tag: c_int) -> u64;
+        unsafe fn idalib_netnode_altset(nodeidx: u64, alt: u64, value: u64, tag: c_int) -> bool;
+        unsafe fn idalib_netnode_altdel(nodeidx: u64, alt: u64, tag: c_int) -> bool;
+        unsafe fn idalib_netnode_supval(nodeidx: u64, alt: u64, tag: c_int) -> Vec<u8>;
+        unsafe fn idalib_netnode_supset(
+            nodeidx: u64,
+            alt: u64,
+            data: *const u8,
+            len: usize,
+            tag: c_int,
+        ) -> bool;
+        unsafe fn idalib_netnode_supdel(nodeidx: u64, alt: u64, tag: c_int) -> bool;
+        unsafe fn idalib_netnode_supstr(nodeidx: u64, alt: u64, tag: c_int) -> String;
+        unsafe fn idalib_netnode_supfirst(nodeidx: u64, tag: c_int) -> u64;
+        unsafe fn idalib_netnode_supnext(nodeidx: u64, cur: u64, tag: c_int) -> u64;
+        unsafe fn idalib_netnode_suplast(nodeidx: u64, tag: c_int) -> u64;
+        unsafe fn idalib_netnode_supprev(nodeidx: u64, cur: u64, tag: c_int) -> u64;
+        unsafe fn idalib_netnode_supdel_all(nodeidx: u64, tag: c_int) -> bool;
+        unsafe fn idalib_netnode_hashval_long(nodeidx: u64, idx: *const c_char, tag: c_int) -> u64;
+        unsafe fn idalib_netnode_hashset(
+            nodeidx: u64,
+            idx: *const c_char,
+            data: *const u8,
+            len: usize,
+            tag: c_int,
+        ) -> bool;
+        unsafe fn idalib_netnode_hashset_long(
+            nodeidx: u64,
+            idx: *const c_char,
+            value: u64,
+            tag: c_int,
+        ) -> bool;
+        unsafe fn idalib_netnode_hashdel(nodeidx: u64, idx: *const c_char, tag: c_int) -> bool;
+        unsafe fn idalib_netnode_hashstr(nodeidx: u64, idx: *const c_char, tag: c_int) -> String;
+        unsafe fn idalib_netnode_hashfirst(nodeidx: u64, tag: c_int) -> String;
+        unsafe fn idalib_netnode_hashnext(nodeidx: u64, idx: *const c_char, tag: c_int) -> String;
+        unsafe fn idalib_netnode_blobsize(nodeidx: u64, start: u64, tag: c_int) -> usize;
+        unsafe fn idalib_netnode_setblob(
+            nodeidx: u64,
+            buf: *const u8,
+            size: usize,
+            start: u64,
+            tag: c_int,
+        ) -> bool;
+        unsafe fn idalib_netnode_delblob(nodeidx: u64, start: u64, tag: c_int) -> c_int;
+        unsafe fn idalib_netnode_valstr(nodeidx: u64) -> String;
+        unsafe fn idalib_netnode_set_value(nodeidx: u64, value: *const u8, length: usize) -> bool;
+        unsafe fn idalib_netnode_delvalue(nodeidx: u64) -> bool;
+        unsafe fn idalib_netnode_inited() -> bool;
     }
 }
 
@@ -1374,9 +1732,45 @@ pub mod func {
         get_func_qty, getn_func, lock_func, qbasic_block_t, qflow_chart_t,
     };
     pub use super::ffix::{
-        idalib_func_flags, idalib_func_flow_chart, idalib_func_name, idalib_get_func_cmt,
-        idalib_qbasic_block_preds, idalib_qbasic_block_succs, idalib_qflow_graph_getn_block,
+        // Function manipulation
+        idalib_add_func,
+        idalib_append_func_tail,
+        idalib_apply_idasgn_to,
+        idalib_calc_func_size,
+        idalib_del_func,
+        idalib_find_func_bounds,
+        idalib_func_does_return,
+        idalib_func_flags,
+        idalib_func_flow_chart,
+        idalib_func_name,
+        idalib_get_fchunk,
+        idalib_get_fchunk_qty,
+        idalib_get_func_bitness,
+        idalib_get_func_cmt,
+        idalib_get_func_ranges,
+        idalib_get_idasgn_qty,
+        idalib_get_next_func,
+        idalib_get_next_func_addr,
+        idalib_get_prev_func,
+        idalib_get_prev_func_addr,
+        idalib_getn_fchunk,
+        idalib_is_func_locked,
+        idalib_is_visible_func,
+        idalib_lock_func_range,
+        idalib_plan_to_apply_idasgn,
+        idalib_qbasic_block_preds,
+        idalib_qbasic_block_succs,
+        idalib_qflow_graph_getn_block,
+        idalib_reanalyze_function,
+        idalib_reanalyze_noret_flag,
+        idalib_remove_func_tail,
         idalib_set_func_cmt,
+        idalib_set_func_end,
+        idalib_set_func_start,
+        idalib_set_noret_insn,
+        idalib_set_tail_owner,
+        idalib_set_visible_func,
+        idalib_update_func,
     };
 
     pub mod flags {
@@ -1393,6 +1787,13 @@ pub mod func {
             FC_APPND, FC_CALL_ENDS, FC_CHKBREAK, FC_NOEXT, FC_NOPREDS, FC_OUTLINES, FC_PRINT,
             FC_RESERVED,
         };
+    }
+
+    /// Function bounds flags
+    pub mod bounds_flags {
+        pub const FIND_FUNC_DEFINE: i32 = 0x0001;
+        pub const FIND_FUNC_IGNOREFN: i32 = 0x0002;
+        pub const FIND_FUNC_KEEPBD: i32 = 0x0004;
     }
 }
 
@@ -1416,9 +1817,69 @@ pub mod segment {
     };
 
     pub use super::ffix::{
-        idalib_segm_align, idalib_segm_bitness, idalib_segm_bytes, idalib_segm_name,
-        idalib_segm_perm, idalib_segm_type,
+        // Segment manipulation
+        idalib_add_segm,
+        idalib_allocate_selector,
+        idalib_change_segment_status,
+        idalib_del_segm,
+        idalib_del_selector,
+        idalib_find_free_selector,
+        idalib_find_selector,
+        idalib_get_first_seg,
+        idalib_get_last_seg,
+        idalib_get_next_seg,
+        idalib_get_prev_seg,
+        idalib_get_segm_class,
+        idalib_get_segm_num,
+        idalib_get_selector_qty,
+        idalib_is_miniidb,
+        idalib_is_segm_locked,
+        idalib_is_spec_ea,
+        idalib_is_spec_segm,
+        idalib_is_visible_segm,
+        idalib_lock_segm,
+        idalib_move_segm,
+        idalib_move_segm_start,
+        idalib_rebase_program,
+        idalib_segm_align,
+        idalib_segm_bitness,
+        idalib_segm_bytes,
+        idalib_segm_name,
+        idalib_segm_perm,
+        idalib_segm_type,
+        idalib_sel2para,
+        idalib_set_segm_base,
+        idalib_set_segm_class,
+        idalib_set_segm_end,
+        idalib_set_segm_start,
+        idalib_set_visible_segm,
+        // Selector operations
+        idalib_setup_selector,
+        idalib_take_memory_snapshot,
     };
+
+    /// Segment deletion flags
+    pub mod del_flags {
+        pub const SEGMOD_KILL: i32 = 0x0001;
+        pub const SEGMOD_KEEP: i32 = 0x0002;
+        pub const SEGMOD_SILENT: i32 = 0x0004;
+        pub const SEGMOD_KEEP0: i32 = 0x0008;
+        pub const SEGMOD_KEEPSEL: i32 = 0x0010;
+        pub const SEGMOD_NOMOVE: i32 = 0x0020;
+        pub const SEGMOD_SPARSE: i32 = 0x0040;
+    }
+
+    /// Move segment return codes
+    pub mod move_codes {
+        pub const MSC_OK: i32 = 0;
+        pub const MSC_BADARG: i32 = -1;
+        pub const MSC_BUSY: i32 = -2;
+        pub const MSC_OVERLAP: i32 = -3;
+        pub const MSC_NETNODE: i32 = -4;
+        pub const MSC_LOADER: i32 = -5;
+        pub const MSC_LOCK: i32 = -6;
+        pub const MSC_MEMORY: i32 = -7;
+    }
 }
 
 pub mod bytes {
@@ -1498,6 +1959,15 @@ pub mod xref {
         cref_t, dref_t, has_external_refs, xrefblk_t, xrefblk_t_first_from, xrefblk_t_first_to,
         xrefblk_t_next_from, xrefblk_t_next_to,
     };
+    pub use super::ffix::{
+        idalib_add_cref, idalib_add_dref, idalib_create_xrefs_from, idalib_del_cref,
+        idalib_del_dref, idalib_delete_all_xrefs_from, idalib_get_first_cref_from,
+        idalib_get_first_cref_to, idalib_get_first_dref_from, idalib_get_first_dref_to,
+        idalib_get_first_fcref_from, idalib_get_first_fcref_to, idalib_get_next_cref_from,
+        idalib_get_next_cref_to, idalib_get_next_dref_from, idalib_get_next_dref_to,
+        idalib_get_next_fcref_from, idalib_get_next_fcref_to, idalib_has_jump_or_flow_xref,
+        idalib_xrefchar,
+    };
 }
 
 pub mod comments {
@@ -1541,7 +2011,81 @@ pub mod nalt {
     pub use super::ffi::{
         retrieve_input_file_md5, retrieve_input_file_sha256, retrieve_input_file_size,
     };
-    pub use super::ffix::idalib_get_input_file_path;
+    pub use super::ffix::{
+        idalib_add_encoding,
+        idalib_clr_abits,
+        idalib_dbg_get_input_path,
+        idalib_del_aflags,
+        idalib_del_encoding,
+        idalib_del_item_color,
+        idalib_del_source_linnum,
+        idalib_del_str_type,
+        idalib_del_switch_info,
+        idalib_del_tinfo,
+        // Additional flags
+        idalib_get_aflags,
+        idalib_get_encoding_bpu,
+        idalib_get_encoding_name,
+        // Encodings
+        idalib_get_encoding_qty,
+        idalib_get_import_module_name,
+        // Imports
+        idalib_get_import_module_qty,
+        idalib_get_input_file_path,
+        // Item colors
+        idalib_get_item_color,
+        idalib_get_root_filename,
+        // Source line numbers
+        idalib_get_source_linnum,
+        // String types
+        idalib_get_str_type,
+        idalib_get_switch_jumps,
+        idalib_get_switch_lowcase,
+        idalib_get_switch_ncases,
+        idalib_has_op_tinfo,
+        // Switch info
+        idalib_has_switch_info,
+        // Type info at address
+        idalib_has_tinfo,
+        idalib_set_abits,
+        idalib_set_aflags,
+        idalib_set_item_color,
+        idalib_set_source_linnum,
+        idalib_set_str_type,
+    };
+
+    /// Additional flags (aflags) bits
+    pub mod aflags {
+        pub const AFL_LINNUM: u32 = 0x00000001;
+        pub const AFL_USERSP: u32 = 0x00000002;
+        pub const AFL_PUBNAM: u32 = 0x00000004;
+        pub const AFL_WEAKNAM: u32 = 0x00000008;
+        pub const AFL_HIDDEN: u32 = 0x00000010;
+        pub const AFL_MANUAL: u32 = 0x00000020;
+        pub const AFL_NOBRD: u32 = 0x00000040;
+        pub const AFL_ZSTROFF: u32 = 0x00000080;
+        pub const AFL_BNOT0: u32 = 0x00000100;
+        pub const AFL_BNOT1: u32 = 0x00000200;
+        pub const AFL_LIB: u32 = 0x00000400;
+        pub const AFL_TI: u32 = 0x00000800;
+        pub const AFL_TI0: u32 = 0x00001000;
+        pub const AFL_TI1: u32 = 0x00002000;
+        pub const AFL_LNAME: u32 = 0x00004000;
+        pub const AFL_TILCMT: u32 = 0x00008000;
+        pub const AFL_LZERO0: u32 = 0x00010000;
+        pub const AFL_LZERO1: u32 = 0x00020000;
+        pub const AFL_COLORED: u32 = 0x00040000;
+        pub const AFL_TERSESTR: u32 = 0x00080000;
+        pub const AFL_SIGN0: u32 = 0x00100000;
+        pub const AFL_SIGN1: u32 = 0x00200000;
+        pub const AFL_NORET: u32 = 0x00400000;
+        pub const AFL_FIXEDSPD: u32 = 0x00800000;
+        pub const AFL_ALIGNFLOW: u32 = 0x01000000;
+        pub const AFL_USERTI: u32 = 0x02000000;
+        pub const AFL_RETFP: u32 = 0x04000000;
+        pub const AFL_USEMODSP: u32 = 0x08000000;
+        pub const AFL_NOTCODE: u32 = 0x10000000;
+    }
 }
 
 pub mod name {
@@ -1851,4 +2395,170 @@ pub mod ida {
             Err(IDAError::GetVersion)
         }
     }
+}
+
+pub mod typeinf {
+    pub use super::ffix::{
+        idalib_add_local_type, idalib_add_til, idalib_del_local_type, idalib_del_til,
+        idalib_del_tinfo_at, idalib_get_abi_name_str, idalib_get_compiler_abbr_str,
+        idalib_get_compiler_id, idalib_get_compiler_name_str, idalib_get_enum_member_count,
+        idalib_get_enum_member_name, idalib_get_enum_member_value, idalib_get_func_arg_count,
+        idalib_get_func_arg_name, idalib_get_func_arg_type, idalib_get_func_cc,
+        idalib_get_func_rettype, idalib_get_func_type_str, idalib_get_named_type_ordinal,
+        idalib_get_named_type_size, idalib_get_named_type_str, idalib_get_numbered_type_str,
+        idalib_get_op_type_str, idalib_get_ordinal_qty, idalib_get_type_size, idalib_get_type_str,
+        idalib_get_udt_member_count, idalib_get_udt_member_name, idalib_get_udt_member_offset,
+        idalib_get_udt_member_type, idalib_is_type_array, idalib_is_type_enum, idalib_is_type_func,
+        idalib_is_type_ptr, idalib_is_type_struct, idalib_is_type_union, idalib_named_type_exists,
+        idalib_parse_decl, idalib_print_type, idalib_set_func_type_str, idalib_set_op_type_str,
+        idalib_set_type_str,
+    };
+
+    /// Calling conventions
+    pub mod cc {
+        pub const CM_CC_INVALID: i32 = 0x00;
+        pub const CM_CC_UNKNOWN: i32 = 0x10;
+        pub const CM_CC_VOIDARG: i32 = 0x20;
+        pub const CM_CC_CDECL: i32 = 0x30;
+        pub const CM_CC_ELLIPSIS: i32 = 0x40;
+        pub const CM_CC_STDCALL: i32 = 0x50;
+        pub const CM_CC_PASCAL: i32 = 0x60;
+        pub const CM_CC_FASTCALL: i32 = 0x70;
+        pub const CM_CC_THISCALL: i32 = 0x80;
+        pub const CM_CC_MANUAL: i32 = 0x90;
+        pub const CM_CC_SPOILED: i32 = 0xA0;
+        pub const CM_CC_GOLANG: i32 = 0xB0;
+        pub const CM_CC_RESERVE4: i32 = 0xC0;
+        pub const CM_CC_RESERVE3: i32 = 0xD0;
+        pub const CM_CC_SPECIALE: i32 = 0xE0;
+        pub const CM_CC_SPECIALP: i32 = 0xF0;
+    }
+
+    /// Print type flags
+    pub mod prtype {
+        pub const PRTYPE_1LINE: i32 = 0x00000;
+        pub const PRTYPE_MULTI: i32 = 0x00001;
+        pub const PRTYPE_TYPE: i32 = 0x00002;
+        pub const PRTYPE_PRAGMA: i32 = 0x00004;
+        pub const PRTYPE_SEMI: i32 = 0x00008;
+        pub const PRTYPE_CPP: i32 = 0x00010;
+        pub const PRTYPE_DEF: i32 = 0x00020;
+        pub const PRTYPE_NOARGS: i32 = 0x00040;
+        pub const PRTYPE_NOARRS: i32 = 0x00080;
+        pub const PRTYPE_NORES: i32 = 0x00100;
+        pub const PRTYPE_RESTORE: i32 = 0x00200;
+        pub const PRTYPE_COLORED: i32 = 0x00400;
+        pub const PRTYPE_METHODS: i32 = 0x01000;
+    }
+}
+
+pub mod problems {
+    pub use super::ffix::{
+        idalib_forget_problem, idalib_get_problem, idalib_get_problem_desc,
+        idalib_get_problem_name, idalib_is_problem_present, idalib_remember_problem,
+    };
+
+    /// Problem types
+    pub mod types {
+        pub const PR_NOBASE: i32 = 65; // 'A' - can't find offset base
+        pub const PR_NONAME: i32 = 78; // 'N' - can't find name
+        pub const PR_NOFOP: i32 = 79; // 'O' - can't find forced operand
+        pub const PR_NOCMT: i32 = 67; // 'C' - can't find comment
+        pub const PR_NOXREFS: i32 = 88; // 'X' - can't find xrefs
+        pub const PR_JUMP: i32 = 74; // 'J' - jump table is not found
+        pub const PR_DISASM: i32 = 81; // 'Q' - disassembly problem
+        pub const PR_HEAD: i32 = 72; // 'H' - data in the middle of instruction
+        pub const PR_ILLADDR: i32 = 73; // 'I' - illegal address
+        pub const PR_MANYLINES: i32 = 76; // 'L' - too many lines
+        pub const PR_BADSTACK: i32 = 83; // 'S' - stack problems
+        pub const PR_ATTN: i32 = 33; // '!' - attention
+        pub const PR_FINAL: i32 = 70; // 'F' - final problems
+        pub const PR_ROLLED: i32 = 82; // 'R' - rolled up addresses
+        pub const PR_COLLISION: i32 = 68; // 'D' - collision
+    }
+}
+
+pub mod offset {
+    pub use super::ffix::{
+        idalib_calc_offset_base, idalib_calc_probable_base_by_value, idalib_can_be_off32,
+        idalib_del_refinfo, idalib_get_default_reftype, idalib_get_offset_expression,
+        idalib_get_refinfo, idalib_op_offset, idalib_set_refinfo,
+    };
+
+    /// Reference types
+    pub mod reftypes {
+        pub const REF_OFF8: i32 = 0;
+        pub const REF_OFF16: i32 = 1;
+        pub const REF_OFF32: i32 = 2;
+        pub const REF_LOW8: i32 = 3;
+        pub const REF_LOW16: i32 = 4;
+        pub const REF_HIGH8: i32 = 5;
+        pub const REF_HIGH16: i32 = 6;
+        pub const REF_VHIGH: i32 = 7;
+        pub const REF_VLOW: i32 = 8;
+        pub const REF_OFF64: i32 = 9;
+        pub const REF_OFF8S: i32 = 10;
+        pub const REF_OFF16S: i32 = 11;
+        pub const REF_OFF32S: i32 = 12;
+    }
+}
+
+pub mod segregs {
+    pub use super::ffix::{
+        idalib_del_sreg_range, idalib_get_prev_sreg_range, idalib_get_sreg, idalib_get_sreg_range,
+        idalib_get_sreg_ranges_qty, idalib_set_default_dataseg, idalib_set_default_sreg_value,
+        idalib_set_sreg_at_next_code, idalib_split_sreg_range,
+    };
+
+    /// Segment register tags
+    pub mod tags {
+        pub const SR_inherit: i32 = 0;
+        pub const SR_user: i32 = 1;
+        pub const SR_auto: i32 = 2;
+        pub const SR_autostart: i32 = 3;
+    }
+}
+
+pub mod tryblks {
+    pub use super::ffix::{
+        idalib_del_tryblks, idalib_find_syseh, idalib_get_tryblks_qty, idalib_is_ea_tryblks,
+    };
+
+    /// Try block flags for is_ea_tryblks
+    pub mod flags {
+        pub const TBEA_TRY: u32 = 0x0001;
+        pub const TBEA_CATCH: u32 = 0x0002;
+        pub const TBEA_SEHTRY: u32 = 0x0004;
+        pub const TBEA_SEHFILT: u32 = 0x0008;
+        pub const TBEA_ANY: u32 = 0x000F;
+        pub const TBEA_FALLTHRU: u32 = 0x0010;
+    }
+}
+
+pub mod netnode {
+    pub use super::ffix::{
+        idalib_ea2node, idalib_netnode_altdel, idalib_netnode_altset, idalib_netnode_altval,
+        idalib_netnode_blobsize, idalib_netnode_create, idalib_netnode_delblob,
+        idalib_netnode_delvalue, idalib_netnode_find, idalib_netnode_get_name,
+        idalib_netnode_hashdel, idalib_netnode_hashfirst, idalib_netnode_hashnext,
+        idalib_netnode_hashset, idalib_netnode_hashset_long, idalib_netnode_hashstr,
+        idalib_netnode_hashval_long, idalib_netnode_inited, idalib_netnode_kill,
+        idalib_netnode_rename, idalib_netnode_set_value, idalib_netnode_setblob,
+        idalib_netnode_supdel, idalib_netnode_supdel_all, idalib_netnode_supfirst,
+        idalib_netnode_suplast, idalib_netnode_supnext, idalib_netnode_supprev,
+        idalib_netnode_supset, idalib_netnode_supstr, idalib_netnode_supval, idalib_netnode_valstr,
+        idalib_node2ea,
+    };
+
+    /// Common netnode tags
+    pub mod tags {
+        pub const ATAG: i32 = b'A' as i32; // altvals
+        pub const STAG: i32 = b'S' as i32; // supvals
+        pub const HTAG: i32 = b'H' as i32; // hashvals
+        pub const VTAG: i32 = b'V' as i32; // node value (blob)
+        pub const NTAG: i32 = b'N' as i32; // netnode name
+    }
+
+    /// Special netnode index
+    pub const BADNODE: u64 = u64::MAX;
 }

@@ -16,7 +16,10 @@
 use std::env;
 
 use idalib::IDAError;
-use idalib::decompiler::{self, CExpr, CInsn, ctype, mcode_is_comparison, mcode_name, mop_type};
+use idalib::decompiler::{
+    self, CExpr, CInsn, ctype, get_merror_desc, mcode_is_call, mcode_is_comparison, mcode_is_jcc,
+    mcode_is_jump, mcode_is_ret, mcode_name, merror, mop_type, negate_mcode_relation,
+};
 use idalib::func::FunctionFlags;
 use idalib::idb::IDB;
 
@@ -193,11 +196,24 @@ fn analyze_function(cfunc: &idalib::decompiler::CFunction) {
         println!("\n[Microcode]");
         println!("  Entry: 0x{:x}", mba.entry_ea());
         println!("  Maturity: {}", mba.maturity());
+        println!(
+            "  Final maturity (const): {}",
+            idalib::decompiler::Mba::final_maturity()
+        );
         println!("  Blocks: {}", mba.qty());
         println!("  Stack size: {}", mba.stack_size());
         println!("  Args count: {}", mba.args_count());
         println!("  Min EA: 0x{:x}", mba.min_ea());
         println!("  Is thunk: {}", mba.is_thunk());
+        println!("  Flags: 0x{:x}", mba.flags());
+
+        // New mba predicates
+        println!("\n  [MBA Predicates]");
+        println!("    has_calls: {}", mba.has_calls());
+        println!("    is_pattern: {}", mba.is_pattern());
+        println!("    returns_float: {}", mba.returns_float());
+        println!("    has_glbopt: {}", mba.has_glbopt());
+        println!("    is_cmnstk: {}", mba.is_cmnstk());
 
         for block in mba.blocks().take(3) {
             println!(
@@ -209,21 +225,82 @@ fn analyze_function(cfunc: &idalib::decompiler::CFunction) {
             );
             println!("    Predecessors: {}", block.npred());
             println!("    Successors: {}", block.nsucc());
+            println!("    Instruction count: {}", block.insn_count());
+            println!("    Flags: 0x{:x}", block.flags());
 
-            let insn_count: usize = block.instructions().count();
-            println!("    Instructions: {}", insn_count);
+            // New mblock predicates
+            let block_preds = [
+                ("is_call_block", block.is_call_block()),
+                ("is_nway", block.is_nway()),
+                ("is_branch", block.is_branch()),
+                ("is_simple_goto_block", block.is_simple_goto_block()),
+                ("is_simple_jcnd_block", block.is_simple_jcnd_block()),
+                ("is_empty", block.is_empty()),
+                ("is_noret", block.is_noret()),
+            ];
+            let active: Vec<_> = block_preds
+                .iter()
+                .filter(|(_, v)| *v)
+                .map(|(n, _)| *n)
+                .collect();
+            if !active.is_empty() {
+                println!("    Block props: {}", active.join(", "));
+            }
 
             // Show first few instructions with detailed operand info
             for (j, minsn) in block.instructions().enumerate().take(3) {
                 let opcode = minsn.opcode();
-                let is_cmp = mcode_is_comparison(opcode);
+
+                // Categorize the instruction
+                let mut cats = Vec::new();
+                if mcode_is_comparison(opcode) {
+                    cats.push("cmp".to_string());
+                }
+                if mcode_is_jcc(opcode) {
+                    cats.push("jcc".to_string());
+                    // Demo: negate the relation
+                    let negated = negate_mcode_relation(opcode);
+                    cats.push(format!("neg={}", mcode_name(negated)));
+                }
+                if mcode_is_call(opcode) {
+                    cats.push("call".to_string());
+                }
+                if mcode_is_jump(opcode) {
+                    cats.push("jmp".to_string());
+                }
+                if mcode_is_ret(opcode) {
+                    cats.push("ret".to_string());
+                }
+
+                let cats_str = if cats.is_empty() {
+                    String::new()
+                } else {
+                    format!(" [{}]", cats.join(", "))
+                };
+
                 println!(
                     "      {}: {} (0x{:x}){}",
                     j,
                     mcode_name(opcode),
                     minsn.ea(),
-                    if is_cmp { " [comparison]" } else { "" }
+                    cats_str
                 );
+
+                // New minsn predicates
+                let insn_preds = [
+                    ("tailcall", minsn.is_tailcall()),
+                    ("fpinsn", minsn.is_fpinsn()),
+                    ("farcall", minsn.is_farcall()),
+                    ("propagatable", minsn.is_propagatable()),
+                ];
+                let active: Vec<_> = insn_preds
+                    .iter()
+                    .filter(|(_, v)| *v)
+                    .map(|(n, _)| *n)
+                    .collect();
+                if !active.is_empty() {
+                    println!("        Props: {}", active.join(", "));
+                }
 
                 // Show operands using the new Mop wrapper
                 if let Some(left) = minsn.left() {
@@ -250,6 +327,7 @@ fn analyze_function(cfunc: &idalib::decompiler::CFunction) {
                     println!("        D: type={} size={}", dest.op_type(), dest.size());
                 }
             }
+            let insn_count = block.insn_count();
             if insn_count > 3 {
                 println!("      ... and {} more", insn_count - 3);
             }
@@ -262,6 +340,24 @@ fn analyze_function(cfunc: &idalib::decompiler::CFunction) {
         println!("    mop_n (number): {}", mop_type::n());
         println!("    mop_stack: {}", mop_type::stack());
         println!("    mop_lvar: {}", mop_type::lvar());
+
+        // Show merror codes
+        println!("\n  [Microcode Error Codes]");
+        println!(
+            "    merr_ok: {} = {:?}",
+            merror::ok(),
+            get_merror_desc(merror::ok())
+        );
+        println!(
+            "    merr_interr: {} = {:?}",
+            merror::interr(),
+            get_merror_desc(merror::interr())
+        );
+        println!(
+            "    merr_canceled: {} = {:?}",
+            merror::canceled(),
+            get_merror_desc(merror::canceled())
+        );
     } else {
         println!("\n[Microcode] Not available (already optimized away)");
     }

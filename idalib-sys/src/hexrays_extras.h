@@ -1703,3 +1703,268 @@ inline int idalib_hexrays_mop_c() { return mop_c; }  // mcases (switch table)
 inline int idalib_hexrays_mop_fn() { return mop_fn; }  // function (for calls)
 inline int idalib_hexrays_mop_p() { return mop_p; }  // pair of operands
 inline int idalib_hexrays_mop_sc() { return mop_sc; }  // scattered
+
+// ============================================================================
+// Additional minsn_t predicates
+// ============================================================================
+
+// Instruction property predicates
+inline bool idalib_hexrays_minsn_is_tailcall(const minsn_t *m) { return m && m->is_tailcall(); }
+inline bool idalib_hexrays_minsn_is_fpinsn(const minsn_t *m) { return m && m->is_fpinsn(); }
+inline bool idalib_hexrays_minsn_is_assert(const minsn_t *m) { return m && m->is_assert(); }
+inline bool idalib_hexrays_minsn_is_persistent(const minsn_t *m) { return m && m->is_persistent(); }
+inline bool idalib_hexrays_minsn_is_combined(const minsn_t *m) { return m && m->is_combined(); }
+inline bool idalib_hexrays_minsn_is_farcall(const minsn_t *m) { return m && m->is_farcall(); }
+inline bool idalib_hexrays_minsn_is_cleaning_pop(const minsn_t *m) { return m && m->is_cleaning_pop(); }
+inline bool idalib_hexrays_minsn_is_propagatable(const minsn_t *m) { return m && m->is_propagatable(); }
+inline bool idalib_hexrays_minsn_is_wild_match(const minsn_t *m) { return m && m->is_wild_match(); }
+inline bool idalib_hexrays_minsn_was_noret_icall(const minsn_t *m) { return m && m->was_noret_icall(); }
+inline bool idalib_hexrays_minsn_is_multimov(const minsn_t *m) { return m && m->is_multimov(); }
+
+// Check if instruction is an unknown call
+inline bool idalib_hexrays_minsn_is_unknown_call(const minsn_t *m) {
+  return m && m->is_unknown_call();
+}
+
+// Get instruction properties flags
+inline int idalib_hexrays_minsn_iprops(const minsn_t *m) {
+  return m ? m->iprops : 0;
+}
+
+// ============================================================================
+// Additional mblock_t operations
+// ============================================================================
+
+// Check if block ends with a call
+inline bool idalib_hexrays_mblock_is_call_block(const mblock_t *blk) {
+  return blk && blk->is_call_block();
+}
+
+// Check if block is an unknown call
+inline bool idalib_hexrays_mblock_is_unknown_call(const mblock_t *blk) {
+  return blk && blk->is_unknown_call();
+}
+
+// Check if block is nway (switch)
+inline bool idalib_hexrays_mblock_is_nway(const mblock_t *blk) {
+  return blk && blk->is_nway();
+}
+
+// Check if block is a branch (conditional)
+inline bool idalib_hexrays_mblock_is_branch(const mblock_t *blk) {
+  return blk && blk->is_branch();
+}
+
+// Check if block is a simple goto
+inline bool idalib_hexrays_mblock_is_simple_goto_block(const mblock_t *blk) {
+  return blk && blk->is_simple_goto_block();
+}
+
+// Check if block is a simple jcnd
+inline bool idalib_hexrays_mblock_is_simple_jcnd_block(const mblock_t *blk) {
+  return blk && blk->is_simple_jcnd_block();
+}
+
+// Check if block is empty
+inline bool idalib_hexrays_mblock_is_empty(const mblock_t *blk) {
+  return blk && blk->empty();
+}
+
+// Get block flags
+inline uint32_t idalib_hexrays_mblock_flags(const mblock_t *blk) {
+  return blk ? blk->flags : 0;
+}
+
+// Check if block is fake
+inline bool idalib_hexrays_mblock_is_fake(const mblock_t *blk) {
+  return blk && (blk->flags & MBL_FAKE);
+}
+
+// Check if block is goto target
+inline bool idalib_hexrays_mblock_is_goto_target(const mblock_t *blk) {
+  return blk && (blk->flags & MBL_GOTO);
+}
+
+// Check if block is noret (dead end)
+inline bool idalib_hexrays_mblock_is_noret(const mblock_t *blk) {
+  return blk && (blk->flags & MBL_NORET);
+}
+
+// Count instructions in block
+inline size_t idalib_hexrays_mblock_insn_count(const mblock_t *blk) {
+  if (!blk) return 0;
+  size_t count = 0;
+  for (const minsn_t *m = blk->head; m != nullptr; m = m->next) {
+    count++;
+  }
+  return count;
+}
+
+// ============================================================================
+// mcode_t relation helpers
+// ============================================================================
+
+// Negate a comparison opcode (e.g., jz -> jnz)
+inline int idalib_hexrays_negate_mcode_relation(int mcode) {
+  return static_cast<int>(negate_mcode_relation(static_cast<mcode_t>(mcode)));
+}
+
+// Swap operands of a comparison opcode (e.g., jl -> jg)
+inline int idalib_hexrays_swap_mcode_relation(int mcode) {
+  return static_cast<int>(swap_mcode_relation(static_cast<mcode_t>(mcode)));
+}
+
+// Get signed version of an unsigned comparison
+inline int idalib_hexrays_get_signed_mcode(int mcode) {
+  return static_cast<int>(get_signed_mcode(static_cast<mcode_t>(mcode)));
+}
+
+// Get unsigned version of a signed comparison
+inline int idalib_hexrays_get_unsigned_mcode(int mcode) {
+  return static_cast<int>(get_unsigned_mcode(static_cast<mcode_t>(mcode)));
+}
+
+// Check if mcode modifies destination
+inline bool idalib_hexrays_mcode_modifies_d(int mcode) {
+  return mcode_modifies_d(static_cast<mcode_t>(mcode));
+}
+
+// Check if mcode is propagatable
+inline bool idalib_hexrays_is_mcode_propagatable(int mcode) {
+  return is_mcode_propagatable(static_cast<mcode_t>(mcode));
+}
+
+// Check if mcode must close a block
+inline bool idalib_hexrays_must_mcode_close_block(int mcode, bool including_calls) {
+  return must_mcode_close_block(static_cast<mcode_t>(mcode), including_calls);
+}
+
+// Check if mcode is a setXX instruction
+inline bool idalib_hexrays_mcode_is_set(int mcode) {
+  return mcode >= m_sets && mcode <= m_setle;
+}
+
+// Check if mcode is a jXX instruction
+inline bool idalib_hexrays_mcode_is_jcc(int mcode) {
+  return mcode >= m_jcnd && mcode <= m_jle;
+}
+
+// Check if mcode is a floating point operation
+inline bool idalib_hexrays_mcode_is_fpu(int mcode) {
+  return mcode >= m_f2i && mcode <= m_fdiv;
+}
+
+// Check if mcode is a call
+inline bool idalib_hexrays_mcode_is_call(int mcode) {
+  return mcode == m_call || mcode == m_icall;
+}
+
+// Check if mcode is a jump
+inline bool idalib_hexrays_mcode_is_jump(int mcode) {
+  return mcode == m_goto || mcode == m_ijmp || mcode == m_jtbl ||
+         (mcode >= m_jcnd && mcode <= m_jle);
+}
+
+// Check if mcode is a return
+inline bool idalib_hexrays_mcode_is_ret(int mcode) {
+  return mcode == m_ret;
+}
+
+// ============================================================================
+// Additional mba_t operations
+// ============================================================================
+
+// Check MBA flags - idalib_hexrays_mba_has_passregs already exists above
+inline bool idalib_hexrays_mba_has_calls(const mba_t *mba) {
+  return mba && (mba->get_mba_flags() & MBA_CALLS);
+}
+
+inline bool idalib_hexrays_mba_is_pattern(const mba_t *mba) {
+  return mba && (mba->get_mba_flags() & MBA_PATTERN);
+}
+
+inline bool idalib_hexrays_mba_returns_float(const mba_t *mba) {
+  return mba && (mba->get_mba_flags() & MBA_RETFP);
+}
+
+inline bool idalib_hexrays_mba_has_glbopt(const mba_t *mba) {
+  return mba && (mba->get_mba_flags() & MBA_GLBOPT);
+}
+
+inline bool idalib_hexrays_mba_is_cmnstk(const mba_t *mba) {
+  return mba && (mba->get_mba_flags() & MBA_CMNSTK);
+}
+
+// Get MBA flags
+inline uint32_t idalib_hexrays_mba_flags(const mba_t *mba) {
+  return mba ? mba->get_mba_flags() : 0;
+}
+
+// Get final maturity level as int
+inline int idalib_hexrays_mba_final_maturity() {
+  return static_cast<int>(MMAT_LVARS);
+}
+
+// ============================================================================
+// merror_t helpers
+// ============================================================================
+
+// Get error description
+inline rust::String idalib_hexrays_get_merror_desc(int code) {
+  qstring out;
+  get_merror_desc(&out, static_cast<merror_t>(code), nullptr);
+  return rust::String(out.c_str());
+}
+
+// Error code constants
+inline int idalib_hexrays_merr_ok() { return MERR_OK; }
+inline int idalib_hexrays_merr_interr() { return MERR_INTERR; }
+inline int idalib_hexrays_merr_insn() { return MERR_INSN; }
+inline int idalib_hexrays_merr_mem() { return MERR_MEM; }
+inline int idalib_hexrays_merr_badblk() { return MERR_BADBLK; }
+inline int idalib_hexrays_merr_badsp() { return MERR_BADSP; }
+inline int idalib_hexrays_merr_prolog() { return MERR_PROLOG; }
+inline int idalib_hexrays_merr_switch() { return MERR_SWITCH; }
+inline int idalib_hexrays_merr_exception() { return MERR_EXCEPTION; }
+inline int idalib_hexrays_merr_hugestack() { return MERR_HUGESTACK; }
+inline int idalib_hexrays_merr_lvars() { return MERR_LVARS; }
+inline int idalib_hexrays_merr_bitness() { return MERR_BITNESS; }
+inline int idalib_hexrays_merr_badcall() { return MERR_BADCALL; }
+inline int idalib_hexrays_merr_badframe() { return MERR_BADFRAME; }
+inline int idalib_hexrays_merr_badidb() { return MERR_BADIDB; }
+inline int idalib_hexrays_merr_sizeof() { return MERR_SIZEOF; }
+inline int idalib_hexrays_merr_redo() { return MERR_REDO; }
+inline int idalib_hexrays_merr_canceled() { return MERR_CANCELED; }
+inline int idalib_hexrays_merr_recdepth() { return MERR_RECDEPTH; }
+inline int idalib_hexrays_merr_overlap() { return MERR_OVERLAP; }
+inline int idalib_hexrays_merr_partinit() { return MERR_PARTINIT; }
+inline int idalib_hexrays_merr_complex() { return MERR_COMPLEX; }
+inline int idalib_hexrays_merr_license() { return MERR_LICENSE; }
+inline int idalib_hexrays_merr_busy() { return MERR_BUSY; }
+inline int idalib_hexrays_merr_funcsize() { return MERR_FUNCSIZE; }
+inline int idalib_hexrays_merr_badranges() { return MERR_BADRANGES; }
+inline int idalib_hexrays_merr_badarch() { return MERR_BADARCH; }
+
+// ============================================================================
+// minsn_t iteration helpers
+// ============================================================================
+
+// Get next instruction (skip nops)
+inline minsn_t *idalib_hexrays_minsn_nexti(const minsn_t *m) {
+  if (!m) return nullptr;
+  minsn_t *n = m->next;
+  while (n && n->opcode == m_nop) {
+    n = n->next;
+  }
+  return n;
+}
+
+// Get previous instruction (skip nops)
+inline minsn_t *idalib_hexrays_minsn_previ(const minsn_t *m) {
+  if (!m) return nullptr;
+  minsn_t *p = m->prev;
+  while (p && p->opcode == m_nop) {
+    p = p->prev;
+  }
+  return p;
+}

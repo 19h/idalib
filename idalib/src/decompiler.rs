@@ -279,12 +279,17 @@ use crate::ffi::hexrays::{
     // Decompilation flags
     idalib_hexrays_decomp_no_wait,
     idalib_hexrays_decomp_warnings,
+    // merror helpers
+    idalib_hexrays_get_merror_desc,
+    idalib_hexrays_get_signed_mcode,
+    idalib_hexrays_get_unsigned_mcode,
     idalib_hexrays_has_cached_cfunc,
     idalib_hexrays_is_assignment_op,
     idalib_hexrays_is_binary_op,
     idalib_hexrays_is_commutative_op,
     idalib_hexrays_is_loop_op,
     idalib_hexrays_is_lvalue_op,
+    idalib_hexrays_is_mcode_propagatable,
     idalib_hexrays_is_relational_op,
     idalib_hexrays_is_unary_op,
     idalib_hexrays_lvar_cmt,
@@ -318,18 +323,39 @@ use crate::ffi::hexrays::{
     idalib_hexrays_mark_cfunc_dirty,
     idalib_hexrays_mba_argidx_size,
     idalib_hexrays_mba_entry_ea,
+    idalib_hexrays_mba_final_maturity,
     idalib_hexrays_mba_first_epilog_ea,
+    idalib_hexrays_mba_flags,
     idalib_hexrays_mba_get_mblock,
+    // New mba flags
+    idalib_hexrays_mba_has_calls,
+    idalib_hexrays_mba_has_glbopt,
     idalib_hexrays_mba_has_passregs,
+    idalib_hexrays_mba_is_cmnstk,
+    idalib_hexrays_mba_is_pattern,
     idalib_hexrays_mba_is_short,
     idalib_hexrays_mba_is_thunk,
     idalib_hexrays_mba_maturity,
     idalib_hexrays_mba_minea,
     // Microcode operations
     idalib_hexrays_mba_qty,
+    idalib_hexrays_mba_returns_float,
     idalib_hexrays_mba_stacksize,
     idalib_hexrays_mblock_end,
+    idalib_hexrays_mblock_flags,
     idalib_hexrays_mblock_head,
+    idalib_hexrays_mblock_insn_count,
+    idalib_hexrays_mblock_is_branch,
+    // New mblock predicates
+    idalib_hexrays_mblock_is_call_block,
+    idalib_hexrays_mblock_is_empty,
+    idalib_hexrays_mblock_is_fake,
+    idalib_hexrays_mblock_is_goto_target,
+    idalib_hexrays_mblock_is_noret,
+    idalib_hexrays_mblock_is_nway,
+    idalib_hexrays_mblock_is_simple_goto_block,
+    idalib_hexrays_mblock_is_simple_jcnd_block,
+    idalib_hexrays_mblock_is_unknown_call,
     idalib_hexrays_mblock_npred,
     idalib_hexrays_mblock_nsucc,
     idalib_hexrays_mblock_pred,
@@ -342,7 +368,14 @@ use crate::ffi::hexrays::{
     idalib_hexrays_mcode_category,
     idalib_hexrays_mcode_is_arithmetic,
     idalib_hexrays_mcode_is_bitwise,
+    idalib_hexrays_mcode_is_call,
     idalib_hexrays_mcode_is_comparison,
+    idalib_hexrays_mcode_is_fpu,
+    idalib_hexrays_mcode_is_jcc,
+    idalib_hexrays_mcode_is_jump,
+    idalib_hexrays_mcode_is_ret,
+    idalib_hexrays_mcode_is_set,
+    idalib_hexrays_mcode_modifies_d,
     idalib_hexrays_mcode_modifies_mem,
     idalib_hexrays_mcode_name,
     idalib_hexrays_mcode_reads_mem,
@@ -350,16 +383,32 @@ use crate::ffi::hexrays::{
     idalib_hexrays_minsn_dstr,
     idalib_hexrays_minsn_ea,
     idalib_hexrays_minsn_find_call,
+    idalib_hexrays_minsn_iprops,
+    idalib_hexrays_minsn_is_assert,
     idalib_hexrays_minsn_is_call,
+    idalib_hexrays_minsn_is_cleaning_pop,
+    idalib_hexrays_minsn_is_combined,
     idalib_hexrays_minsn_is_cond,
+    idalib_hexrays_minsn_is_farcall,
+    idalib_hexrays_minsn_is_fpinsn,
     idalib_hexrays_minsn_is_jump,
+    idalib_hexrays_minsn_is_multimov,
+    idalib_hexrays_minsn_is_persistent,
+    idalib_hexrays_minsn_is_propagatable,
+    // New minsn predicates
+    idalib_hexrays_minsn_is_tailcall,
+    idalib_hexrays_minsn_is_unknown_call,
+    idalib_hexrays_minsn_is_wild_match,
     // minsn_t additional operations
     idalib_hexrays_minsn_l,
     idalib_hexrays_minsn_modifies_d,
     idalib_hexrays_minsn_next,
+    idalib_hexrays_minsn_nexti,
     idalib_hexrays_minsn_opcode,
     idalib_hexrays_minsn_prev,
+    idalib_hexrays_minsn_previ,
     idalib_hexrays_minsn_r,
+    idalib_hexrays_minsn_was_noret_icall,
     idalib_hexrays_mop_S,
     idalib_hexrays_mop_a,
     idalib_hexrays_mop_addr_target,
@@ -395,9 +444,14 @@ use crate::ffi::hexrays::{
     idalib_hexrays_mop_v,
     // mop_t type constants
     idalib_hexrays_mop_z,
+    idalib_hexrays_must_mcode_close_block,
+    // New mcode relation helpers
+    idalib_hexrays_negate_mcode_relation,
     // Operator helpers
     idalib_hexrays_negated_relation,
+    idalib_hexrays_swap_mcode_relation,
     idalib_hexrays_swapped_relation,
+    // Types
     lvar_t,
     lvars_iter,
     mba_t,
@@ -2457,6 +2511,43 @@ impl<'a> Mba<'a> {
     pub fn has_passregs(&self) -> bool {
         unsafe { idalib_hexrays_mba_has_passregs(self.ptr) }
     }
+
+    // --- Additional MBA flags ---
+
+    /// Check if call information has been built.
+    pub fn has_calls(&self) -> bool {
+        unsafe { idalib_hexrays_mba_has_calls(self.ptr) }
+    }
+
+    /// Check if this is a microcode pattern.
+    pub fn is_pattern(&self) -> bool {
+        unsafe { idalib_hexrays_mba_is_pattern(self.ptr) }
+    }
+
+    /// Check if the function returns a floating point value.
+    pub fn returns_float(&self) -> bool {
+        unsafe { idalib_hexrays_mba_returns_float(self.ptr) }
+    }
+
+    /// Check if global optimization has been performed.
+    pub fn has_glbopt(&self) -> bool {
+        unsafe { idalib_hexrays_mba_has_glbopt(self.ptr) }
+    }
+
+    /// Check if stack variables and arguments are treated as one area.
+    pub fn is_cmnstk(&self) -> bool {
+        unsafe { idalib_hexrays_mba_is_cmnstk(self.ptr) }
+    }
+
+    /// Get the MBA flags.
+    pub fn flags(&self) -> u32 {
+        unsafe { idalib_hexrays_mba_flags(self.ptr) }
+    }
+
+    /// Get the final maturity level constant.
+    pub fn final_maturity() -> i32 {
+        unsafe { idalib_hexrays_mba_final_maturity() }.into()
+    }
 }
 
 /// A microcode basic block (mblock_t).
@@ -2537,6 +2628,68 @@ impl<'a> Mblock<'a> {
         MblockInsnIter {
             current: self.head(),
         }
+    }
+
+    // --- Block predicates ---
+
+    /// Check if this block ends with a call instruction.
+    pub fn is_call_block(&self) -> bool {
+        unsafe { idalib_hexrays_mblock_is_call_block(self.ptr) }
+    }
+
+    /// Check if this block ends with an unknown call.
+    pub fn is_unknown_call(&self) -> bool {
+        unsafe { idalib_hexrays_mblock_is_unknown_call(self.ptr) }
+    }
+
+    /// Check if this is an n-way block (switch).
+    pub fn is_nway(&self) -> bool {
+        unsafe { idalib_hexrays_mblock_is_nway(self.ptr) }
+    }
+
+    /// Check if this is a branch (conditional 2-way) block.
+    pub fn is_branch(&self) -> bool {
+        unsafe { idalib_hexrays_mblock_is_branch(self.ptr) }
+    }
+
+    /// Check if this is a simple goto block.
+    pub fn is_simple_goto_block(&self) -> bool {
+        unsafe { idalib_hexrays_mblock_is_simple_goto_block(self.ptr) }
+    }
+
+    /// Check if this is a simple conditional jump block.
+    pub fn is_simple_jcnd_block(&self) -> bool {
+        unsafe { idalib_hexrays_mblock_is_simple_jcnd_block(self.ptr) }
+    }
+
+    /// Check if this block is empty (no instructions).
+    pub fn is_empty(&self) -> bool {
+        unsafe { idalib_hexrays_mblock_is_empty(self.ptr) }
+    }
+
+    /// Check if this is a fake block.
+    pub fn is_fake(&self) -> bool {
+        unsafe { idalib_hexrays_mblock_is_fake(self.ptr) }
+    }
+
+    /// Check if this block is a goto target.
+    pub fn is_goto_target(&self) -> bool {
+        unsafe { idalib_hexrays_mblock_is_goto_target(self.ptr) }
+    }
+
+    /// Check if this is a dead-end block (doesn't return).
+    pub fn is_noret(&self) -> bool {
+        unsafe { idalib_hexrays_mblock_is_noret(self.ptr) }
+    }
+
+    /// Get the block flags.
+    pub fn flags(&self) -> u32 {
+        unsafe { idalib_hexrays_mblock_flags(self.ptr) }
+    }
+
+    /// Count the number of instructions in this block.
+    pub fn insn_count(&self) -> usize {
+        unsafe { idalib_hexrays_mblock_insn_count(self.ptr) }
     }
 }
 
@@ -2674,6 +2827,99 @@ impl<'a> Minsn<'a> {
     /// Find a call instruction starting from this instruction.
     pub fn find_call(&self, with_helpers: bool) -> Option<Minsn<'a>> {
         let ptr = unsafe { idalib_hexrays_minsn_find_call(self.ptr, with_helpers) };
+        if ptr.is_null() {
+            None
+        } else {
+            Some(Minsn {
+                ptr,
+                _marker: PhantomData,
+            })
+        }
+    }
+
+    // --- Additional predicates ---
+
+    /// Check if this is a tail call.
+    pub fn is_tailcall(&self) -> bool {
+        unsafe { idalib_hexrays_minsn_is_tailcall(self.ptr) }
+    }
+
+    /// Check if this is a floating point instruction.
+    pub fn is_fpinsn(&self) -> bool {
+        unsafe { idalib_hexrays_minsn_is_fpinsn(self.ptr) }
+    }
+
+    /// Check if this is an assertion instruction.
+    pub fn is_assert(&self) -> bool {
+        unsafe { idalib_hexrays_minsn_is_assert(self.ptr) }
+    }
+
+    /// Check if this instruction is persistent.
+    pub fn is_persistent(&self) -> bool {
+        unsafe { idalib_hexrays_minsn_is_persistent(self.ptr) }
+    }
+
+    /// Check if this instruction has been combined from multiple instructions.
+    pub fn is_combined(&self) -> bool {
+        unsafe { idalib_hexrays_minsn_is_combined(self.ptr) }
+    }
+
+    /// Check if this is a far call.
+    pub fn is_farcall(&self) -> bool {
+        unsafe { idalib_hexrays_minsn_is_farcall(self.ptr) }
+    }
+
+    /// Check if this is a stack-cleaning pop.
+    pub fn is_cleaning_pop(&self) -> bool {
+        unsafe { idalib_hexrays_minsn_is_cleaning_pop(self.ptr) }
+    }
+
+    /// Check if this instruction is propagatable.
+    pub fn is_propagatable(&self) -> bool {
+        unsafe { idalib_hexrays_minsn_is_propagatable(self.ptr) }
+    }
+
+    /// Check if this instruction uses wild matching.
+    pub fn is_wild_match(&self) -> bool {
+        unsafe { idalib_hexrays_minsn_is_wild_match(self.ptr) }
+    }
+
+    /// Check if this was a noret indirect call.
+    pub fn was_noret_icall(&self) -> bool {
+        unsafe { idalib_hexrays_minsn_was_noret_icall(self.ptr) }
+    }
+
+    /// Check if this instruction moves multiple registers.
+    pub fn is_multimov(&self) -> bool {
+        unsafe { idalib_hexrays_minsn_is_multimov(self.ptr) }
+    }
+
+    /// Check if this is an unknown call.
+    pub fn is_unknown_call(&self) -> bool {
+        unsafe { idalib_hexrays_minsn_is_unknown_call(self.ptr) }
+    }
+
+    /// Get the instruction properties flags.
+    pub fn iprops(&self) -> i32 {
+        unsafe { idalib_hexrays_minsn_iprops(self.ptr) }.into()
+    }
+
+    /// Get the next instruction, skipping nops.
+    pub fn nexti(&self) -> Option<Minsn<'a>> {
+        let ptr = unsafe { idalib_hexrays_minsn_nexti(self.ptr) };
+        if ptr.is_null() {
+            None
+        } else {
+            Some(Minsn {
+                ptr,
+                _marker: PhantomData,
+            })
+        }
+    }
+
+    /// Get the previous instruction, skipping nops.
+    pub fn previ(&self) -> Option<Minsn<'a>> {
+        let ptr = unsafe { idalib_hexrays_minsn_previ(self.ptr) };
         if ptr.is_null() {
             None
         } else {
@@ -2940,4 +3186,192 @@ pub fn mcode_is_arithmetic(opcode: i32) -> bool {
 /// Check if a microcode opcode is bitwise.
 pub fn mcode_is_bitwise(opcode: i32) -> bool {
     unsafe { idalib_hexrays_mcode_is_bitwise(c_int(opcode)) }
+}
+
+/// Check if a microcode opcode is a conditional jump (jcc).
+pub fn mcode_is_jcc(opcode: i32) -> bool {
+    unsafe { idalib_hexrays_mcode_is_jcc(c_int(opcode)) }
+}
+
+/// Check if a microcode opcode is a setcc (conditional set).
+pub fn mcode_is_set(opcode: i32) -> bool {
+    unsafe { idalib_hexrays_mcode_is_set(c_int(opcode)) }
+}
+
+/// Check if a microcode opcode is a floating-point instruction.
+pub fn mcode_is_fpu(opcode: i32) -> bool {
+    unsafe { idalib_hexrays_mcode_is_fpu(c_int(opcode)) }
+}
+
+/// Check if a microcode opcode is a call instruction.
+pub fn mcode_is_call(opcode: i32) -> bool {
+    unsafe { idalib_hexrays_mcode_is_call(c_int(opcode)) }
+}
+
+/// Check if a microcode opcode is a jump instruction.
+pub fn mcode_is_jump(opcode: i32) -> bool {
+    unsafe { idalib_hexrays_mcode_is_jump(c_int(opcode)) }
+}
+
+/// Check if a microcode opcode is a return instruction.
+pub fn mcode_is_ret(opcode: i32) -> bool {
+    unsafe { idalib_hexrays_mcode_is_ret(c_int(opcode)) }
+}
+
+/// Check if a microcode opcode modifies the destination operand.
+pub fn mcode_modifies_d(opcode: i32) -> bool {
+    unsafe { idalib_hexrays_mcode_modifies_d(c_int(opcode)) }
+}
+
+/// Check if a microcode opcode is propagatable (for optimization).
+pub fn is_mcode_propagatable(opcode: i32) -> bool {
+    unsafe { idalib_hexrays_is_mcode_propagatable(c_int(opcode)) }
+}
+
+/// Check if a microcode opcode must close a basic block.
+pub fn must_mcode_close_block(opcode: i32, including_calls: bool) -> bool {
+    unsafe { idalib_hexrays_must_mcode_close_block(c_int(opcode), including_calls) }
+}
+
+/// Negate a conditional relation opcode (e.g., jz -> jnz, jae -> jb).
+/// Returns the negated opcode.
+pub fn negate_mcode_relation(opcode: i32) -> i32 {
+    unsafe { idalib_hexrays_negate_mcode_relation(c_int(opcode)) }.into()
+}
+
+/// Swap a conditional relation opcode (e.g., jb -> ja, jle -> jge).
+/// Returns the swapped opcode.
+pub fn swap_mcode_relation(opcode: i32) -> i32 {
+    unsafe { idalib_hexrays_swap_mcode_relation(c_int(opcode)) }.into()
+}
+
+/// Get the signed version of a comparison opcode.
+/// Returns the signed opcode.
+pub fn get_signed_mcode(opcode: i32) -> i32 {
+    unsafe { idalib_hexrays_get_signed_mcode(c_int(opcode)) }.into()
+}
+
+/// Get the unsigned version of a comparison opcode.
+/// Returns the unsigned opcode.
+pub fn get_unsigned_mcode(opcode: i32) -> i32 {
+    unsafe { idalib_hexrays_get_unsigned_mcode(c_int(opcode)) }.into()
+}
+
+/// Get a description of a microcode error code.
+pub fn get_merror_desc(code: i32) -> String {
+    unsafe { idalib_hexrays_get_merror_desc(c_int(code)) }
+}
+
+/// Microcode error codes (merror_t).
+pub mod merror {
+    use crate::ffi::hexrays::*;
+
+    /// No error
+    pub fn ok() -> i32 {
+        unsafe { idalib_hexrays_merr_ok() }.into()
+    }
+    /// Internal error
+    pub fn interr() -> i32 {
+        unsafe { idalib_hexrays_merr_interr() }.into()
+    }
+    /// Cannot convert to microcode
+    pub fn insn() -> i32 {
+        unsafe { idalib_hexrays_merr_insn() }.into()
+    }
+    /// Memory reference expected
+    pub fn mem() -> i32 {
+        unsafe { idalib_hexrays_merr_mem() }.into()
+    }
+    /// Invalid base address
+    pub fn badblk() -> i32 {
+        unsafe { idalib_hexrays_merr_badblk() }.into()
+    }
+    /// Bad stack pointer
+    pub fn badsp() -> i32 {
+        unsafe { idalib_hexrays_merr_badsp() }.into()
+    }
+    /// Positive stack pointer
+    pub fn prolog() -> i32 {
+        unsafe { idalib_hexrays_merr_prolog() }.into()
+    }
+    /// Switch analysis failed
+    pub fn switch_val() -> i32 {
+        unsafe { idalib_hexrays_merr_switch() }.into()
+    }
+    /// Exception handler
+    pub fn exception() -> i32 {
+        unsafe { idalib_hexrays_merr_exception() }.into()
+    }
+    /// Function too large (stack)
+    pub fn hugestack() -> i32 {
+        unsafe { idalib_hexrays_merr_hugestack() }.into()
+    }
+    /// Too many local variables
+    pub fn lvars() -> i32 {
+        unsafe { idalib_hexrays_merr_lvars() }.into()
+    }
+    /// Bitness conflict
+    pub fn bitness() -> i32 {
+        unsafe { idalib_hexrays_merr_bitness() }.into()
+    }
+    /// Bad call type
+    pub fn badcall() -> i32 {
+        unsafe { idalib_hexrays_merr_badcall() }.into()
+    }
+    /// Bad frame
+    pub fn badframe() -> i32 {
+        unsafe { idalib_hexrays_merr_badframe() }.into()
+    }
+    /// Bad database
+    pub fn badidb() -> i32 {
+        unsafe { idalib_hexrays_merr_badidb() }.into()
+    }
+    /// Sizeof failure
+    pub fn sizeof_err() -> i32 {
+        unsafe { idalib_hexrays_merr_sizeof() }.into()
+    }
+    /// Redo decompilation
+    pub fn redo() -> i32 {
+        unsafe { idalib_hexrays_merr_redo() }.into()
+    }
+    /// Decompilation cancelled
+    pub fn canceled() -> i32 {
+        unsafe { idalib_hexrays_merr_canceled() }.into()
+    }
+    /// Recursion depth exceeded
+    pub fn recdepth() -> i32 {
+        unsafe { idalib_hexrays_merr_recdepth() }.into()
+    }
+    /// Overlapping ranges
+    pub fn overlap() -> i32 {
+        unsafe { idalib_hexrays_merr_overlap() }.into()
+    }
+    /// Partial initialization detected
+    pub fn partinit() -> i32 {
+        unsafe { idalib_hexrays_merr_partinit() }.into()
+    }
+    /// Complex function
+    pub fn complex() -> i32 {
+        unsafe { idalib_hexrays_merr_complex() }.into()
+    }
+    /// License error
+    pub fn license() -> i32 {
+        unsafe { idalib_hexrays_merr_license() }.into()
+    }
+    /// Decompiler is busy
+    pub fn busy() -> i32 {
+        unsafe { idalib_hexrays_merr_busy() }.into()
+    }
+    /// Function size limit exceeded
+    pub fn funcsize() -> i32 {
+        unsafe { idalib_hexrays_merr_funcsize() }.into()
+    }
+    /// Bad ranges
+    pub fn badranges() -> i32 {
+        unsafe { idalib_hexrays_merr_badranges() }.into()
+    }
+    /// Unsupported architecture
+    pub fn badarch() -> i32 {
+        unsafe { idalib_hexrays_merr_badarch() }.into()
+    }
 }

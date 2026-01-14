@@ -77,12 +77,17 @@
 use std::marker::PhantomData;
 use std::sync::{Mutex, MutexGuard, OnceLock};
 
+pub mod auto;
 pub mod bookmarks;
+pub mod bytes;
 pub mod decompiler;
+pub mod fixup;
+pub mod frame;
 pub mod func;
 pub mod idb;
 pub mod insn;
 pub mod license;
+pub mod lines;
 pub mod meta;
 pub mod name;
 pub mod plugin;

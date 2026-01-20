@@ -109,6 +109,7 @@ use crate::ffi::hexrays::{
     idalib_hexrays_cfunc_eamap_count,
     // cfunc_t operations
     idalib_hexrays_cfunc_entry_ea,
+    idalib_hexrays_cfunc_entry_for_lvar,
     idalib_hexrays_cfunc_find_by_ea,
     idalib_hexrays_cfunc_find_label,
     idalib_hexrays_cfunc_find_lvar_by_name,
@@ -338,11 +339,19 @@ use crate::ffi::hexrays::{
     idalib_hexrays_lvar_is_typed,
     idalib_hexrays_lvar_is_used,
     idalib_hexrays_lvar_is_used_byref,
+    idalib_hexrays_lvar_modify_persistent,
     // lvar_t operations
     idalib_hexrays_lvar_name,
+    // lvar_t persistent modifications
+    idalib_hexrays_lvar_rename_persistent,
     idalib_hexrays_lvar_set_cmt,
+    idalib_hexrays_lvar_set_cmt_persistent,
     idalib_hexrays_lvar_set_name,
+    idalib_hexrays_lvar_set_nomap,
+    idalib_hexrays_lvar_set_noptr,
     idalib_hexrays_lvar_set_type,
+    idalib_hexrays_lvar_set_type_persistent,
+    idalib_hexrays_lvar_set_unused,
     idalib_hexrays_lvar_type_str,
     idalib_hexrays_lvar_width,
     idalib_hexrays_lvars_iter_next,
@@ -2550,6 +2559,101 @@ impl<'a> LocalVar<'a> {
             false
         }
     }
+
+    // --- Persistent modification methods ---
+    // These methods save changes to the IDA database
+
+    /// Rename the variable persistently (saves to database).
+    ///
+    /// Unlike `set_name()`, this method saves the change to the IDA database
+    /// so it will be preserved when the file is reopened.
+    ///
+    /// Note: This method requires a valid cfunc reference.
+    pub fn rename_persistent(&self, name: &str) -> bool {
+        if self.cfunc.is_null() {
+            return false;
+        }
+        let func_ea = unsafe { idalib_hexrays_cfunc_entry_for_lvar(self.cfunc) };
+        unsafe { idalib_hexrays_lvar_rename_persistent(func_ea, self.ptr, name) }
+    }
+
+    /// Set the variable's type persistently (saves to database).
+    ///
+    /// The type is specified as a C declaration string (e.g., "int", "char *", "struct foo").
+    ///
+    /// Unlike `set_type()`, this method saves the change to the IDA database.
+    pub fn set_type_persistent(&self, type_str: &str) -> bool {
+        if self.cfunc.is_null() {
+            return false;
+        }
+        let func_ea = unsafe { idalib_hexrays_cfunc_entry_for_lvar(self.cfunc) };
+        unsafe { idalib_hexrays_lvar_set_type_persistent(func_ea, self.ptr, type_str) }
+    }
+
+    /// Set the variable's comment persistently (saves to database).
+    ///
+    /// Unlike `set_comment()`, this method saves the change to the IDA database.
+    pub fn set_comment_persistent(&self, comment: &str) -> bool {
+        if self.cfunc.is_null() {
+            return false;
+        }
+        let func_ea = unsafe { idalib_hexrays_cfunc_entry_for_lvar(self.cfunc) };
+        unsafe { idalib_hexrays_lvar_set_cmt_persistent(func_ea, self.ptr, comment) }
+    }
+
+    /// Set the variable as a non-pointer type (saves to database).
+    ///
+    /// This tells the decompiler that this variable should not be treated
+    /// as a pointer, even if it might look like one.
+    pub fn set_noptr(&self, noptr: bool) -> bool {
+        if self.cfunc.is_null() {
+            return false;
+        }
+        let func_ea = unsafe { idalib_hexrays_cfunc_entry_for_lvar(self.cfunc) };
+        unsafe { idalib_hexrays_lvar_set_noptr(func_ea, self.ptr, noptr) }
+    }
+
+    /// Forbid automatic mapping of this variable (saves to database).
+    ///
+    /// This prevents the decompiler from automatically merging this
+    /// variable with other variables.
+    pub fn set_nomap(&self, nomap: bool) -> bool {
+        if self.cfunc.is_null() {
+            return false;
+        }
+        let func_ea = unsafe { idalib_hexrays_cfunc_entry_for_lvar(self.cfunc) };
+        unsafe { idalib_hexrays_lvar_set_nomap(func_ea, self.ptr, nomap) }
+    }
+
+    /// Mark this argument as unused (saves to database).
+    ///
+    /// This is useful for marking function arguments that are not
+    /// actually used by the function.
+    pub fn set_unused(&self, unused: bool) -> bool {
+        if self.cfunc.is_null() {
+            return false;
+        }
+        let func_ea = unsafe { idalib_hexrays_cfunc_entry_for_lvar(self.cfunc) };
+        unsafe { idalib_hexrays_lvar_set_unused(func_ea, self.ptr, unused) }
+    }
+
+    /// Modify multiple variable attributes at once (saves to database).
+    ///
+    /// This is more efficient than calling individual methods when you need
+    /// to change multiple attributes. Pass empty strings for attributes you
+    /// don't want to change.
+    ///
+    /// # Arguments
+    /// * `name` - New name (empty to keep current)
+    /// * `type_str` - New type as C declaration (empty to keep current)
+    /// * `comment` - New comment (empty to keep current)
+    pub fn modify_persistent(&self, name: &str, type_str: &str, comment: &str) -> bool {
+        if self.cfunc.is_null() {
+            return false;
+        }
+        let func_ea = unsafe { idalib_hexrays_cfunc_entry_for_lvar(self.cfunc) };
+        unsafe { idalib_hexrays_lvar_modify_persistent(func_ea, self.ptr, name, type_str, comment) }
+    }
 }
 
 /// Iterator over local variables.
@@ -4486,5 +4590,72 @@ pub mod numformat {
     /// User asked to invert bits of the constant
     pub fn bitnot() -> i32 {
         unsafe { idalib_hexrays_nf_bitnot() }.into()
+    }
+}
+
+// ============================================================================
+// Local Variable Info Flags (LVINF_)
+// ============================================================================
+
+/// Flags for controlling local variable info persistence.
+/// These are used with `modify_user_lvar_info` internally.
+pub mod lvarinfo {
+    use crate::ffi::hexrays::*;
+
+    /// Preserve saved user settings regardless of variable changes.
+    /// Even if the variable is destroyed, keep its saved info.
+    pub fn keep() -> i32 {
+        unsafe { idalib_hexrays_lvinf_keep() }.into()
+    }
+
+    /// Force the decompiler to create a new variable at this location.
+    pub fn split() -> i32 {
+        unsafe { idalib_hexrays_lvinf_split() }.into()
+    }
+
+    /// Variable type should not be a pointer.
+    pub fn noptr() -> i32 {
+        unsafe { idalib_hexrays_lvinf_noptr() }.into()
+    }
+
+    /// Forbid automatic mapping of this variable.
+    pub fn nomap() -> i32 {
+        unsafe { idalib_hexrays_lvinf_nomap() }.into()
+    }
+
+    /// This is an unused argument (corresponds to CVAR_UNUSED).
+    pub fn unused() -> i32 {
+        unsafe { idalib_hexrays_lvinf_unused() }.into()
+    }
+}
+
+/// Flags for `modify_user_lvar_info` operation selection.
+/// These select which attributes to modify.
+pub mod mli {
+    use crate::ffi::hexrays::*;
+
+    /// Apply local variable name.
+    pub fn name() -> i32 {
+        unsafe { idalib_hexrays_mli_name() }.into()
+    }
+
+    /// Apply local variable type.
+    pub fn type_flag() -> i32 {
+        unsafe { idalib_hexrays_mli_type() }.into()
+    }
+
+    /// Apply local variable comment.
+    pub fn cmt() -> i32 {
+        unsafe { idalib_hexrays_mli_cmt() }.into()
+    }
+
+    /// Set LVINF_* bits.
+    pub fn set_flags() -> i32 {
+        unsafe { idalib_hexrays_mli_set_flags() }.into()
+    }
+
+    /// Clear LVINF_* bits.
+    pub fn clr_flags() -> i32 {
+        unsafe { idalib_hexrays_mli_clr_flags() }.into()
     }
 }

@@ -190,6 +190,21 @@ fn analyze_function(cfunc: &idalib::decompiler::CFunction) {
         }
     }
 
+    // Demo: Local variable modification APIs (read-only demo - shows available methods)
+    println!("\n[Local Variable Modification APIs]");
+    println!("  Available in-memory methods (not persistent):");
+    println!("    lvar.set_name(name) - Rename variable");
+    println!("    lvar.set_type(type_str) - Set type from C declaration");
+    println!("    lvar.set_comment(cmt) - Set comment");
+    println!("  Available persistent methods (saved to DB):");
+    println!("    lvar.rename_persistent(name) - Rename and save to DB");
+    println!("    lvar.set_type_persistent(type_str) - Set type and save to DB");
+    println!("    lvar.set_comment_persistent(cmt) - Set comment and save to DB");
+    println!("    lvar.set_noptr(bool) - Mark as non-pointer");
+    println!("    lvar.set_nomap(bool) - Forbid automatic variable mapping");
+    println!("    lvar.set_unused(bool) - Mark argument as unused");
+    println!("    lvar.modify_persistent(name, type, cmt) - Modify multiple attributes");
+
     // Function arguments
     println!("\n[Arguments] ({})", cfunc.args_count());
     for i in 0..cfunc.args_count() {

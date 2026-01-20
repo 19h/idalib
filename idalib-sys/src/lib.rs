@@ -592,6 +592,7 @@ pub mod hexrays {
         idalib_hexrays_cfunc_del_orphan_cmts,
         idalib_hexrays_cfunc_eamap_count,
         idalib_hexrays_cfunc_entry_ea,
+        idalib_hexrays_cfunc_entry_for_lvar,
         idalib_hexrays_cfunc_find_by_ea,
         idalib_hexrays_cfunc_find_label,
         idalib_hexrays_cfunc_find_lvar_by_name,
@@ -843,15 +844,28 @@ pub mod hexrays {
         idalib_hexrays_lvar_is_typed,
         idalib_hexrays_lvar_is_used,
         idalib_hexrays_lvar_is_used_byref,
+        idalib_hexrays_lvar_modify_persistent,
         // lvar_t operations
         idalib_hexrays_lvar_name,
+        // lvar_t persistent modifications
+        idalib_hexrays_lvar_rename_persistent,
         idalib_hexrays_lvar_set_cmt,
+        idalib_hexrays_lvar_set_cmt_persistent,
         idalib_hexrays_lvar_set_name,
+        idalib_hexrays_lvar_set_nomap,
+        idalib_hexrays_lvar_set_noptr,
         // lvar_t modifications (new)
         idalib_hexrays_lvar_set_type,
+        idalib_hexrays_lvar_set_type_persistent,
+        idalib_hexrays_lvar_set_unused,
         idalib_hexrays_lvar_type_str,
         idalib_hexrays_lvar_width,
         idalib_hexrays_lvars_iter_next,
+        idalib_hexrays_lvinf_keep,
+        idalib_hexrays_lvinf_nomap,
+        idalib_hexrays_lvinf_noptr,
+        idalib_hexrays_lvinf_split,
+        idalib_hexrays_lvinf_unused,
         // Cache management
         idalib_hexrays_mark_cfunc_dirty,
         idalib_hexrays_mba_argidx_size,
@@ -970,6 +984,12 @@ pub mod hexrays {
         idalib_hexrays_minsn_previ,
         idalib_hexrays_minsn_r,
         idalib_hexrays_minsn_was_noret_icall,
+        idalib_hexrays_mli_clr_flags,
+        idalib_hexrays_mli_cmt,
+        // MLI and LVINF flags
+        idalib_hexrays_mli_name,
+        idalib_hexrays_mli_set_flags,
+        idalib_hexrays_mli_type,
         idalib_hexrays_mop_S,
         idalib_hexrays_mop_a,
         idalib_hexrays_mop_addr_target,
@@ -2129,6 +2149,48 @@ mod ffix {
         unsafe fn idalib_hexrays_nf_negate() -> c_int;
         unsafe fn idalib_hexrays_nf_bitnot() -> c_int;
         unsafe fn idalib_hexrays_cfunc_numforms_count(cfunc: *const cfunc_t) -> usize;
+
+        // Local variable persistent modification
+        unsafe fn idalib_hexrays_mli_name() -> c_int;
+        unsafe fn idalib_hexrays_mli_type() -> c_int;
+        unsafe fn idalib_hexrays_mli_cmt() -> c_int;
+        unsafe fn idalib_hexrays_mli_set_flags() -> c_int;
+        unsafe fn idalib_hexrays_mli_clr_flags() -> c_int;
+        unsafe fn idalib_hexrays_lvinf_keep() -> c_int;
+        unsafe fn idalib_hexrays_lvinf_split() -> c_int;
+        unsafe fn idalib_hexrays_lvinf_noptr() -> c_int;
+        unsafe fn idalib_hexrays_lvinf_nomap() -> c_int;
+        unsafe fn idalib_hexrays_lvinf_unused() -> c_int;
+        unsafe fn idalib_hexrays_lvar_rename_persistent(
+            func_ea: u64,
+            v: *mut lvar_t,
+            name: &str,
+        ) -> bool;
+        unsafe fn idalib_hexrays_lvar_set_type_persistent(
+            func_ea: u64,
+            v: *mut lvar_t,
+            type_str: &str,
+        ) -> bool;
+        unsafe fn idalib_hexrays_lvar_set_cmt_persistent(
+            func_ea: u64,
+            v: *mut lvar_t,
+            cmt: &str,
+        ) -> bool;
+        unsafe fn idalib_hexrays_lvar_set_noptr(func_ea: u64, v: *mut lvar_t, noptr: bool) -> bool;
+        unsafe fn idalib_hexrays_lvar_set_nomap(func_ea: u64, v: *mut lvar_t, nomap: bool) -> bool;
+        unsafe fn idalib_hexrays_lvar_set_unused(
+            func_ea: u64,
+            v: *mut lvar_t,
+            unused: bool,
+        ) -> bool;
+        unsafe fn idalib_hexrays_lvar_modify_persistent(
+            func_ea: u64,
+            v: *mut lvar_t,
+            name: &str,
+            type_str: &str,
+            cmt: &str,
+        ) -> bool;
+        unsafe fn idalib_hexrays_cfunc_entry_for_lvar(f: *const cfunc_t) -> u64;
 
         unsafe fn idalib_inf_get_version() -> u16;
         unsafe fn idalib_inf_get_genflags() -> u16;

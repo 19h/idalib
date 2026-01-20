@@ -2668,3 +2668,150 @@ inline int idalib_hexrays_itp_for_arg(int argnum) {
   if (argnum < 0 || argnum > 63) return ITP_EMPTY;
   return ITP_ARG1 + argnum;
 }
+
+// ============================================================================
+// Local Variable Persistent Modification APIs
+// ============================================================================
+
+// MLI flags for modify_user_lvar_info
+inline int idalib_hexrays_mli_name() { return MLI_NAME; }
+inline int idalib_hexrays_mli_type() { return MLI_TYPE; }
+inline int idalib_hexrays_mli_cmt() { return MLI_CMT; }
+inline int idalib_hexrays_mli_set_flags() { return MLI_SET_FLAGS; }
+inline int idalib_hexrays_mli_clr_flags() { return MLI_CLR_FLAGS; }
+
+// LVINF flags for lvar_saved_info_t
+inline int idalib_hexrays_lvinf_keep() { return LVINF_KEEP; }
+inline int idalib_hexrays_lvinf_split() { return LVINF_SPLIT; }
+inline int idalib_hexrays_lvinf_noptr() { return LVINF_NOPTR; }
+inline int idalib_hexrays_lvinf_nomap() { return LVINF_NOMAP; }
+inline int idalib_hexrays_lvinf_unused() { return LVINF_UNUSED; }
+
+// Rename local variable persistently (saves to database)
+// This uses modify_user_lvar_info with MLI_NAME flag
+inline bool idalib_hexrays_lvar_rename_persistent(ea_t func_ea, lvar_t *v, rust::Str name) {
+  if (!v) return false;
+  
+  lvar_saved_info_t info;
+  info.ll = *static_cast<lvar_locator_t*>(v);  // Copy locator from lvar
+  std::string name_str(name.data(), name.size());
+  info.name = qstring(name_str.c_str());
+  
+  return modify_user_lvar_info(func_ea, MLI_NAME, info);
+}
+
+// Set local variable type persistently (saves to database)
+// Type is specified as a C declaration string
+inline bool idalib_hexrays_lvar_set_type_persistent(ea_t func_ea, lvar_t *v, rust::Str type_str) {
+  if (!v) return false;
+  
+  std::string type_s(type_str.data(), type_str.size());
+  
+  tinfo_t tif;
+  if (!parse_decl(&tif, nullptr, nullptr, type_s.c_str(), PT_VAR | PT_RAWARGS)) {
+    return false;
+  }
+  
+  lvar_saved_info_t info;
+  info.ll = *static_cast<lvar_locator_t*>(v);
+  info.type = tif;
+  
+  return modify_user_lvar_info(func_ea, MLI_TYPE, info);
+}
+
+// Set local variable comment persistently (saves to database)
+inline bool idalib_hexrays_lvar_set_cmt_persistent(ea_t func_ea, lvar_t *v, rust::Str cmt) {
+  if (!v) return false;
+  
+  lvar_saved_info_t info;
+  info.ll = *static_cast<lvar_locator_t*>(v);
+  std::string cmt_str(cmt.data(), cmt.size());
+  info.cmt = qstring(cmt_str.c_str());
+  
+  return modify_user_lvar_info(func_ea, MLI_CMT, info);
+}
+
+// Set local variable as "no pointer" type (persistent)
+inline bool idalib_hexrays_lvar_set_noptr(ea_t func_ea, lvar_t *v, bool noptr) {
+  if (!v) return false;
+  
+  lvar_saved_info_t info;
+  info.ll = *static_cast<lvar_locator_t*>(v);
+  if (noptr) {
+    info.flags |= LVINF_NOPTR;
+  }
+  
+  return modify_user_lvar_info(func_ea, noptr ? MLI_SET_FLAGS : MLI_CLR_FLAGS, info);
+}
+
+// Set local variable as "no map" (forbid automatic mapping)
+inline bool idalib_hexrays_lvar_set_nomap(ea_t func_ea, lvar_t *v, bool nomap) {
+  if (!v) return false;
+  
+  lvar_saved_info_t info;
+  info.ll = *static_cast<lvar_locator_t*>(v);
+  if (nomap) {
+    info.flags |= LVINF_NOMAP;
+  }
+  
+  return modify_user_lvar_info(func_ea, nomap ? MLI_SET_FLAGS : MLI_CLR_FLAGS, info);
+}
+
+// Set local variable as unused argument
+inline bool idalib_hexrays_lvar_set_unused(ea_t func_ea, lvar_t *v, bool unused) {
+  if (!v) return false;
+  
+  lvar_saved_info_t info;
+  info.ll = *static_cast<lvar_locator_t*>(v);
+  if (unused) {
+    info.flags |= LVINF_UNUSED;
+  }
+  
+  return modify_user_lvar_info(func_ea, unused ? MLI_SET_FLAGS : MLI_CLR_FLAGS, info);
+}
+
+// Combined rename + retype + comment in one call (efficient for multiple changes)
+inline bool idalib_hexrays_lvar_modify_persistent(
+    ea_t func_ea, 
+    lvar_t *v,
+    rust::Str name,       // empty = don't change
+    rust::Str type_str,   // empty = don't change
+    rust::Str cmt         // empty = don't change
+) {
+  if (!v) return false;
+  
+  lvar_saved_info_t info;
+  info.ll = *static_cast<lvar_locator_t*>(v);
+  
+  uint mli_flags = 0;
+  
+  if (!name.empty()) {
+    std::string name_s(name.data(), name.size());
+    info.name = qstring(name_s.c_str());
+    mli_flags |= MLI_NAME;
+  }
+  
+  if (!type_str.empty()) {
+    std::string type_s(type_str.data(), type_str.size());
+    tinfo_t tif;
+    if (parse_decl(&tif, nullptr, nullptr, type_s.c_str(), PT_VAR | PT_RAWARGS)) {
+      info.type = tif;
+      mli_flags |= MLI_TYPE;
+    }
+  }
+  
+  if (!cmt.empty()) {
+    std::string cmt_s(cmt.data(), cmt.size());
+    info.cmt = qstring(cmt_s.c_str());
+    mli_flags |= MLI_CMT;
+  }
+  
+  if (mli_flags == 0) return true;  // Nothing to do
+  
+  return modify_user_lvar_info(func_ea, mli_flags, info);
+}
+
+// Get the function entry EA from a cfunc (needed for persistent modifications)
+inline ea_t idalib_hexrays_cfunc_entry_for_lvar(const cfunc_t *f) {
+  return f ? f->entry_ea : BADADDR;
+}
